@@ -26,6 +26,9 @@ public class TWAgent1 extends TWAgent{
     protected int came_from[][][];
 //    ~~~~~~~~~~~~~~~~~~water flood~~~~~~~~~~~~~~~~~
     protected int lastpoint[][][];
+    protected int distances[][];
+    protected ArrayList<int[]> calculatedArea;
+    protected ArrayList<int[]> toCalculateArea;
     public TWAgent1(int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env,fuelLevel);
         fuelTolerance=0.9;
@@ -60,13 +63,13 @@ public class TWAgent1 extends TWAgent{
                     result_route.add(0,Arrays.copyOf(node,2));
                     node=came_from[node[0]][node[1]];
                 }
-                for(int i=-1;i<2;i++) {
-                    for (int j = -1; j < 2; j++) {
-                        if(this.getEnvironment().isInBounds(candidate[0]+i,candidate[1]+j)){
-
-                        }
-                    }
-                }
+//                for(int i=-1;i<2;i++) {
+//                    for (int j = -1; j < 2; j++) {
+//                        if(this.getEnvironment().isInBounds(candidate[0]+i,candidate[1]+j)){
+//
+//                        }
+//                    }
+//                }
                 return result_route;
             }
             openset.remove(candidate);
@@ -74,15 +77,18 @@ public class TWAgent1 extends TWAgent{
             int min_distance=MapSizeX+MapSzieY;
             for(int i=-1;i<2;i++){
                 for(int j=-1;j<2;j++){
+                    if(i*j!=0||(i==0 && j==0)){
+                        continue;
+                    }
                     int better_estimate_g=0;
                     if(this.getEnvironment().isInBounds(candidate[0]+i,candidate[1]+j) && !(this.memory.getObjects() instanceof TWObstacle)){
                         int tempindex[]={candidate[0]+i,candidate[1]+j};
-                        if(closeset.contains(tempindex)){
+                        if(ifListContain(closeset,tempindex)){
                             continue;
                         }
                         else{
                             int estimate_g= g_score[candidate[0]][candidate[1]]+1;
-                            if(!openset.contains(tempindex)){
+                            if(!ifListContain(openset,tempindex)){
                                 better_estimate_g=1;
                             }
                             else if(estimate_g<g_score[tempindex[0]][tempindex[1]]){
@@ -105,7 +111,71 @@ public class TWAgent1 extends TWAgent{
         }
         return result_route;
     }
-    public
+    public ArrayList<int[]> getSurround(ArrayList<int[]> pointList){
+        ArrayList<int[]> surroundPoints=new ArrayList<int[]>();
+        for(int[] point:pointList){
+            for(int i=-1;i<2;i++){
+                for(int j=-1;j<2;j++){
+                    if(this.getEnvironment().isInBounds(point[0]+i,point[1]+j)&&(i*j==0)&&(i!=0&&j!=0)){
+                        if(ifListContain(surroundPoints,new int[]{point[0]+i,point[1]+j})||
+                                ifListContain(this.toCalculateArea,new int[]{point[0]+i,point[1]+j})||
+                                ifListContain(this.calculatedArea,new int[]{point[0]+i,point[1]+j})){
+                            continue;
+                        }
+                        else{
+                            surroundPoints.add(new int[]{point[0]+i,point[1]+j});
+                        }
+                    }
+                }
+            }
+        }
+        return surroundPoints;
+    }
+    public void waterFlood(int source_x, int source_y){
+        this.lastpoint=new int[this.MapSizeX][this.MapSzieY][2];
+        this.distances=new int[this.MapSizeX][this.MapSzieY];
+        this.calculatedArea=new ArrayList<int[]>();
+        this.toCalculateArea=new ArrayList<int[]>();
+        Arrays.fill(distances,-1);
+        calculatedArea.add(new int[]{source_x,source_y});
+        distances[source_x][source_y]=0;
+        while(ifArrayContain(distances,-1)){
+            this.toCalculateArea=getSurround(this.calculatedArea);
+            for(int[] surroundpoint:this.toCalculateArea){
+                for(int i=-1;i<2;i++){
+                    for(int j=-1;j<2;j++){
+                        if(this.getEnvironment().isInBounds(surroundpoint[0]+i,surroundpoint[1]+j)&&(i*j==0)&&(i!=0&&j!=0)){
+                            if(ifListContain(this.calculatedArea,new int[]{surroundpoint[0]+i,surroundpoint[1]+j})){
+                                distances[surroundpoint[0]][surroundpoint[1]]=distances[surroundpoint[0]+i][surroundpoint[1]+j]+1;
+                                this.lastpoint[surroundpoint[0]][surroundpoint[1]][0]=surroundpoint[0]+i;
+                                this.lastpoint[surroundpoint[0]][surroundpoint[1]][1]=surroundpoint[1]+j;
+                            }
+                            else{
+                                System.out.println("there is error in calculating surrounding points\n");
+                            }
+                        }
+                        else{
+                            continue;
+                        }
+                    }
+                }
+            }
+            this.calculatedArea.addAll(this.toCalculateArea);
+            this.toCalculateArea=new ArrayList<int[]>();
+        }
+    }
+    public ArrayList<int[]> routeByWaterFlood(int source_x,int source_y,int target_x,int target_y){
+        int x=target_x;
+        int y=target_y;
+        ArrayList<int[]> resultRoute=new ArrayList<int[]>();
+        resultRoute.add(new int[]{x,y});
+        while(x!=source_x||y!=source_y){
+            x=lastpoint[target_x][target_y][0];
+            y=lastpoint[target_x][target_y][1];
+            resultRoute.add(new int[]{x,y});
+        }
+        return resultRoute;
+    }
     public int[] get_min(ArrayList<int[]> array,int[][] scores){
         int min=MapSizeX+MapSzieY;
         int[] minindex= new int[2];
@@ -119,7 +189,7 @@ public class TWAgent1 extends TWAgent{
     }
     public boolean decisde_if_available(int target_x,int target_y){
         if (this.fuelx==-1||this.fuely==-1){
-            System.out.println('need to firstly find the fuel station.');
+            System.out.println("need to firstly find the fuel station.");
             return true;
         }
         ArrayList<int []> result_route1=Astar(this.getX(),this.getY(),target_x,target_y);
@@ -155,5 +225,23 @@ public class TWAgent1 extends TWAgent{
         if (this.state==0){
 
         }
+    }
+    protected boolean ifArrayContain(int [][]distances,int value){
+        for(int i=0;i<distances.length;i++){
+            for(int j=0;j<distances[0].length;j++){
+                if(distances[i][j]==value){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public boolean ifListContain(ArrayList<int[]> arrayList,int[] index){
+        for (int i[]: arrayList){
+            if(i[0]==index[0]&&i[1]==index[1]){
+                return true;
+            }
+        }
+        return false;
     }
 }
