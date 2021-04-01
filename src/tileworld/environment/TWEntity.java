@@ -27,9 +27,6 @@ public abstract class TWEntity{
 
     private TWEnvironment environment;
 
-
-
-
     protected int x;
     protected int y;
 

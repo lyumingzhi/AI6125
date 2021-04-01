@@ -218,6 +218,25 @@ public class TWAgentWorkingMemory {
 		return schedule.getTime();
 	}
 
+
+        public TWFuelStation getNearbyFuelStation(int sx, int sy) {
+		// TWFuelStation o = null;
+		TWFuelStation ret = null;
+		int x, y;
+		for (Int2D offset : spiral) {
+			x = offset.x + sx;
+			y = offset.y + sy;
+
+			if (me.getEnvironment().isInBounds(x, y) && objects[x][y] != null) {
+				if (this.me.getEnvironment().getFuelingStation().getX() == x &&
+					this.me.getEnvironment().getFuelingStation().getY() == y) {
+					return this.me.getEnvironment().getFuelingStation();
+				}
+			}
+		}
+		return ret;
+	}
+
 	/**
 	 * Finds a nearby tile we have seen less than threshold timesteps ago
 	 *

@@ -1,6 +1,7 @@
 package tileworld.agent;
 
 import java.awt.Color;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import sim.display.GUIState;
 import sim.engine.SimState;
@@ -33,6 +34,7 @@ import tileworld.exceptions.CellBlockedException;
 public abstract class TWAgent extends TWEntity implements Steppable {
 
     protected int score;
+    private ArrayList<TWAgent> otherAgents;
 
     public int getScore() {
         return score;
@@ -46,6 +48,8 @@ public abstract class TWAgent extends TWEntity implements Steppable {
         this.carriedTiles = new ArrayList<TWTile>();
         this.sensor = new TWAgentSensor(this, Parameters.defaultSensorRange);
         this.memory = new TWAgentWorkingMemory(this, env.schedule, env.getxDimension(), env.getyDimension());
+
+        this.otherAgents = new ArrayList<TWAgent>();
     }
     /**
      * Fuel level, automatically decremented once per move.
@@ -72,10 +76,27 @@ public abstract class TWAgent extends TWEntity implements Steppable {
     public void sense() {
         sensor.sense();
     }
-    
+
+    public int getLocationID() {
+        int x = getX();
+        int y = getY();
+        int w = this.getEnvironment().getxDimension();
+        return y * w + x;
+    }
+
     public void communicate() {
-        Message message = new Message("","","");
+        Integer locID = new Integer(this.getLocationID());
+        Message message = new Message(locID.toString(),"","", this);
         this.getEnvironment().receiveMessage(message); // this will send the message to the broadcast channel of the environment
+
+        // Receive messages
+        ArrayList<Message> messages = this.getEnvironment().getMessages();
+
+        for (int i = 0; i < messages.size(); i++){
+            if (messages.get(i).getAgent().getLocationID() == this.getLocationID())
+                continue;
+            this.otherAgents.add(messages.get(i).getAgent());
+        }
     }
 
     /**

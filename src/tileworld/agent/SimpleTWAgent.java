@@ -7,6 +7,7 @@ package tileworld.agent;
 
 import tileworld.environment.TWDirection;
 import tileworld.environment.TWEnvironment;
+import tileworld.environment.TWTile;
 import tileworld.exceptions.CellBlockedException;
 
 /**
@@ -31,7 +32,7 @@ public class SimpleTWAgent extends TWAgent{
     protected TWThought think() {
 //        getMemory().getClosestObjectInSensorRange(Tile.class);
         System.out.println("Simple Score: " + this.score);
-        return new TWThought(TWAction.MOVE,getRandomDirection());
+        return new TWThought(TWAction.MOVE, getRandomDirection());
     }
 
     @Override
@@ -52,7 +53,7 @@ public class SimpleTWAgent extends TWAgent{
     }
 
 
-    private TWDirection getRandomDirection(){
+    protected TWDirection getRandomDirection(){
 
         TWDirection randomDir = TWDirection.values()[this.getEnvironment().random.nextInt(5)];
 

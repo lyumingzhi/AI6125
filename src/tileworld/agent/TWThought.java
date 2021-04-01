@@ -5,6 +5,8 @@
 package tileworld.agent;
 
 import tileworld.environment.TWDirection;
+import tileworld.environment.TWHole;
+import tileworld.environment.TWTile;
 
 /**
  * TWContextBuilder
@@ -27,10 +29,14 @@ public class TWThought {
 
     private final TWAction action;
     private final TWDirection direction;
+    private TWTile tile;
+    private TWHole hole;
 
     public TWThought(TWAction action, TWDirection direction) {
         this.direction = direction;
         this.action = action;
+        this.tile = null;
+        this.hole = null;
     }
 
     public TWAction getAction() {
@@ -40,4 +46,22 @@ public class TWThought {
     public TWDirection getDirection() {
         return direction;
     }
+
+    public TWTile getTile() {
+        return tile;
+    }
+
+    public void setTile(TWTile tile) {
+        this.tile = tile;
+    }
+
+    public TWHole getHole() {
+        return hole;
+    }
+
+    public void setHole(TWHole hole) {
+        this.hole = hole;
+    }
+
+
 }
