@@ -3,6 +3,7 @@ package tileworld.agent;
 import tileworld.Parameters;
 import tileworld.environment.*;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Map.Entry;
 import java.util.Arrays;
@@ -135,13 +136,13 @@ public class TWAgent1 extends TWAgent{
         }
         return result_route;
     }
+
     public ArrayList<int[]> getSurround(ArrayList<int[]> pointList){
         ArrayList<int[]> surroundPoints=new ArrayList<int[]>();
         for(int[] point:pointList){
             for(int i=-1;i<2;i++){
                 for(int j=-1;j<2;j++){
-                    if(this.getEnvironment().isInBounds(point[0]+i,point[1]+j)&&(i*j==0)&&(i!=0&&j!=0)
-                            && !(this.memory.getMemoryGrid().get(point[0]+i,point[1]+j) instanceof TWObstacle)){
+                    if(this.checkCheckable(point[0]+i,point[1]+j)&&(i*j==0)&&(i!=0||j!=0)){
                         if(ifListContain(surroundPoints,new int[]{point[0]+i,point[1]+j})||
                                 ifListContain(this.toCalculateArea,new int[]{point[0]+i,point[1]+j})||
                                 ifListContain(this.calculatedArea,new int[]{point[0]+i,point[1]+j})){
@@ -154,6 +155,7 @@ public class TWAgent1 extends TWAgent{
                 }
             }
         }
+//        System.out.println("surround point: "+surroundPoints.size());
         return surroundPoints;
     }
     public void waterFlood(int source_x, int source_y){
@@ -168,52 +170,82 @@ public class TWAgent1 extends TWAgent{
         calculatedArea.add(new int[]{source_x,source_y});
         distances[source_x][source_y]=0;
         while(ifArrayContain(distances,-1)){
-            System.out.println("it is in waterflood\n");
+//            System.out.println("it is in waterflood\n");
             this.toCalculateArea=getSurround(this.calculatedArea);
             int tempDistances[][]=new int[this.MapSizeX][this.MapSizeY];
-            for (int i=1;i<this.MapSizeX;i++){
-                for(int j=1;j<this.MapSizeY;j++){
+            for (int i=0;i<this.MapSizeX;i++){
+                for(int j=0;j<this.MapSizeY;j++){
                     tempDistances[i][j]=distances[i][j];
                 }
             }
+//            if(this.calculatedArea.size()==1){
+//                for(int [] i:this.toCalculateArea){
+//                    System.out.println("ssssssss "+i[0]+" "+i[1]);
+//                }
+//            }
             for(int[] surroundpoint:this.toCalculateArea){
+                int ifchange=0;
                 for(int i=-1;i<2;i++){
                     for(int j=-1;j<2;j++){
-                        if(this.getEnvironment().isInBounds(surroundpoint[0]+i,surroundpoint[1]+j)&&(i*j==0)&&(i!=0&&j!=0)
-                                && !(this.memory.getMemoryGrid().get(surroundpoint[0]+i,surroundpoint[1]+j) instanceof TWObstacle)){
+                        if(ifchange==1){
+                            break;
+                        }
+                        if(this.checkCheckable(surroundpoint[0]+i,surroundpoint[1]+j)&&(i*j==0)&&(i!=0||j!=0)){
+//                            System.out.println("to and calculatedArea: "+this.toCalculateArea.size()+" "+this.calculatedArea.size());
+//                            if((this.memory.getMemoryGrid().get(surroundpoint[0]+i,surroundpoint[1]+j) instanceof TWObstacle)
+//                                    && (surroundpoint[0]+i==this.getX() && surroundpoint[1]+j==this.getY())){
+//                                System.out.println("agent is on an obstacle");
+//                                System.exit(0);
+//                            }
+//                            System.out.println("i: "+i+" j :"+j);
                             if(ifListContain(this.calculatedArea,new int[]{surroundpoint[0]+i,surroundpoint[1]+j})){
-                                distances[surroundpoint[0]][surroundpoint[1]]=distances[surroundpoint[0]+i][surroundpoint[1]+j]+1;
+                                this.distances[surroundpoint[0]][surroundpoint[1]]=distances[surroundpoint[0]+i][surroundpoint[1]+j]+1;
                                 this.lastpoint[surroundpoint[0]][surroundpoint[1]][0]=surroundpoint[0]+i;
                                 this.lastpoint[surroundpoint[0]][surroundpoint[1]][1]=surroundpoint[1]+j;
+                                ifchange=1;
                             }
-                            else{
-                                System.out.println("there is error in calculating surrounding points\n");
-                            }
-                        }
-                        else{
-                            continue;
+//
                         }
                     }
-                }
-
-            }
-            this.calculatedArea.addAll(this.toCalculateArea);
-            this.toCalculateArea=new ArrayList<int[]>();
-            int ifchange=0;
-            for (int i=1;i<this.MapSizeX;i++){
-                for(int j=1;j<this.MapSizeY;j++){
-                    if(tempDistances[i][j]!=distances[i][j]){
-                        ifchange=1;
+                    if(ifchange==1){
                         break;
                     }
                 }
-                if(ifchange==1){
+                if(ifchange==0){
+                    System.out.println("to and calculatedArea: "+this.toCalculateArea.size()+" "+this.calculatedArea.size());
+                    System.out.println(" the start point "+this.calculatedArea.get(0)[0]+" "+this.calculatedArea.get(0)[1]);
+                    System.out.println("the surround point 1 "+ this.toCalculateArea.get(0)[0]+" "+this.toCalculateArea.get(0)[1]);
+                    this.displayMap(this.distances);
+                    System.out.println("there is error in calculating surrounding points\n");
+                }
+            }
+            this.calculatedArea.addAll(this.toCalculateArea);
+            this.toCalculateArea=new ArrayList<int[]>();
+            int ifchange1=0;
+            for (int i=1;i<this.MapSizeX;i++){
+                for(int j=1;j<this.MapSizeY;j++){
+                    if(tempDistances[i][j]!=distances[i][j]){
+                        ifchange1=1;
+                        break;
+                    }
+                }
+                if(ifchange1==1){
                     break;
                 }
             }
-            if(ifchange!=1){
+            if(ifchange1!=1){
                 break;
             }
+        }
+    }
+    public Boolean checkCheckable(int aimx, int aimy){
+        if(this.getEnvironment().isInBounds(aimx,aimy)
+                && (!(this.memory.getMemoryGrid().get(aimx,aimy) instanceof TWObstacle)
+                || (aimx==this.getX() && aimy==this.getY()))){
+            return true;
+        }
+        else{
+            return false;
         }
     }
     public ArrayList<int[]> routeByWaterFlood(int source_x,int source_y,int target_x,int target_y){
@@ -258,9 +290,10 @@ public class TWAgent1 extends TWAgent{
         int minDistance=this.MapSizeX+this.MapSizeY;
         int minx=-1;
         int miny=-1;
+//        this.displayMap(this.distances);
         for(int i=0;i<this.MapSizeX;i++){
             for(int j=0; j<this.MapSizeY;j++){
-                if(this.distances[i][j]<minDistance && Type.isInstance( this.memory.getMemoryGrid().get(i,j))){
+                if(this.distances[i][j]!=-1&&this.distances[i][j]<minDistance && Type.isInstance( this.memory.getMemoryGrid().get(i,j))){
                     minDistance=this.distances[i][j];
                     minx=i;
                     miny=j;
@@ -268,27 +301,43 @@ public class TWAgent1 extends TWAgent{
             }
         }
         if(minx!=-1&&miny!=-1) {
+            System.out.println(Type+" the mini x is "+minx+" "+miny+"\n");
+            System.out.println("this agent is at "+this.getX()+" "+this.getY());
+            System.out.println("this object is "+ this.memory.getMemoryGrid().get(minx,miny).getClass());
+
+//            System.out.println("this distance: "+this.distances);
+            //            System.exit(0);
             return this.memory.getMemoryGrid().get(minx, miny);
+
         }
         else{
+            System.out.println("can not find any "+Type);
             return null;
         }
     }
 //    protected TWThought exploration(){
 //        memory=this.getMemory();
 //    }
+    protected void displayMap(int [][]map){
+        for(int i=0;i<map.length;i++){
+            for(int j=0;j<map[i].length;j++){
+                System.out.print(map[j][i]+" ");
+            }
+            System.out.print("\n");
+        }
+    }
     protected TWThought think(){
 //        this.sensor.sense();
         //state 0: exploration
         //state 1: ToTile
         //state 2: ToHole
         //state 3: ToFuel
-        System.out.println("Simple Score: " + this.score);
+        System.out.println("Simple Score: " + this.score+" state: "+this.state);
         // return new TWThought(TWAction.MOVE, getRandomDirection());
         TWThought thought;
 
         this.waterFlood(this.getX(),this.getY());
-
+//        displayMap(this.distances);
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought();
@@ -333,7 +382,9 @@ public class TWAgent1 extends TWAgent{
         return false;
     }
     public boolean ifListContain(ArrayList<int[]> arrayList,int[] index){
+//        if(arrayList.size()==1)System.out.println("i am in ifLisContain");
         for (int i[]: arrayList){
+//            if(arrayList.size()==1)System.out.println("input list and index "+i[0]+" "+i[1]+" "+index[0]+" "+index[1]);
             if(i[0]==index[0]&&i[1]==index[1]){
                 return true;
             }
@@ -457,7 +508,7 @@ public class TWAgent1 extends TWAgent{
     }
 
     private  TWThought getTileThought() {
-        if (this.targetTile == null) {
+//        if (this.targetTile == null) {
 //            this.targetTile = this.getMemory().getNearbyTile(this.getX(), this.getY(), 100);
             Object tempClosestItem=this.getClosest(TWTile.class);
             if(tempClosestItem!=null){
@@ -466,7 +517,7 @@ public class TWAgent1 extends TWAgent{
             else {
                 this.targetTile = null;
             }
-        }
+//        }
         if (this.targetTile == null) return this.getExploreThought();
         TWDirection d = this.getOneStepDirection(this.targetTile.getX(), this.targetTile.getY());
         if (d == TWDirection.Z) {
