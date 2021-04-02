@@ -21,17 +21,17 @@ import tileworld.environment.TWTile;
 
 /**
  * TWAgentMemory
- * 
+ *
  * @author michaellees
- * 
+ *
  *         Created: Apr 15, 2010 Copyright michaellees 2010
- * 
+ *
  *         Description:
- * 
+ *
  *         This class represents the memory of the TileWorld agents. It stores
  *         all objects which is has observed for a given period of time. You may
  *         want to develop an entirely new memory system by extending this one.
- * 
+ *
  *         The memory is supposed to have a probabilistic decay, whereby an element is
  *         removed from memory with a probability proportional to the length of
  *         time the element has been in memory. The maximum length of time which
@@ -70,7 +70,7 @@ public class TWAgentWorkingMemory {
 	private HashMap<Class<?>, TWEntity> closestInSensorRange;
 	static private List<Int2D> spiral = new NeighbourSpiral(Parameters.defaultSensorRange * 4).spiral();
 	//    private List<TWAgent> neighbouringAgents = new ArrayList<TWAgent>();
-	public int[][]  lastNullPerceptTime;
+
 	// x, y: the dimension of the grid
 	public TWAgentWorkingMemory(TWAgent moi, Schedule schedule, int x, int y) {
 
@@ -81,12 +81,6 @@ public class TWAgentWorkingMemory {
 
 		this.schedule = schedule;
 		this.memoryGrid = new ObjectGrid2D(me.getEnvironment().getxDimension(), me.getEnvironment().getyDimension());
-		this.lastNullPerceptTime=new int[x][y];
-		for(int i=0;i<x;i++){
-			for(int j=0;j<y;j++){
-				this.lastNullPerceptTime[i][j]=-1;
-			}
-		}
 	}
 
 	/**
@@ -96,7 +90,7 @@ public class TWAgentWorkingMemory {
 	 *
 	 * Also note that currently the agent has no sense of moving objects, so
 	 * an agent may remember the same object at two locations simultaneously.
-	 * 
+	 *
 	 * Other agents in the grid are sensed and passed to this function. But it
 	 * is currently not used for anything. Do remember that an agent sense itself
 	 * too.
@@ -121,20 +115,14 @@ public class TWAgentWorkingMemory {
 		for (int i = 0; i < sensedObjects.size(); i++) {
 			TWEntity o = (TWEntity) sensedObjects.get(i);
 			if (!(o instanceof TWObject)) {
-
-				this.lastNullPerceptTime[objectXCoords.get(i)][objectYCoords.get(i)]=(int)this.schedule.getTime();
-				if (this.memoryGrid.get(objectXCoords.get(i),objectYCoords.get(i)) instanceof TWObject){
-					this.memorySize--;
-				}
-				this.removeObject(objectXCoords.get(i),objectYCoords.get(i));
 				continue;
 			}
-			
-			//if nothing in memory currently, then were increasing the number 
+
+			//if nothing in memory currently, then were increasing the number
 			//of items we have in memory by 1
 			//if(objects[objectXCoords.get(i)][objectYCoords.get(i)] == null) memorySize++;
 			if(objects[o.getX()][o.getY()] == null) memorySize++;
-			
+
 			//Add the object to memory
 			objects[o.getX()][o.getY()] = new TWAgentPercept(o, this.getSimulationTime());
 
@@ -143,12 +131,12 @@ public class TWAgentWorkingMemory {
 			updateClosest(o);
 
 		}
-		//       Agents are currently not added to working memory. Depending on how 
+		//       Agents are currently not added to working memory. Depending on how
 		//       communication is modelled you might want to do this.
 		//        neighbouringAgents.clear();
 		//        for (int i = 0; i < sensedAgents.size(); i++) {
-		//            
-		//            
+		//
+		//
 		//            if (!(sensedAgents.get(i) instanceof TWAgent)) {
 		//                assert false;
 		//            }
@@ -168,20 +156,20 @@ public class TWAgentWorkingMemory {
 	//        }
 	//    }
 
-	/**
-	 * updates memory using 2d array of sensor range - currently not used
-	 * @see TWAgentWorkingMemory#updateMemory(sim.util.Bag, sim.util.IntBag, sim.util.IntBag)
-	 */
-	public void updateMemory(TWEntity[][] sensed, int xOffset, int yOffset) {
-		for (int x = 0; x < sensed.length; x++) {
-			for (int y = 0; y < sensed[x].length; y++) {
-				objects[x + xOffset][y + yOffset] = new TWAgentPercept(sensed[x][y], this.getSimulationTime());
-			}
-		}
-	}
+//	/**
+//	 * updates memory using 2d array of sensor range - currently not used
+//	 * @see TWAgentWorkingMemory#updateMemory(sim.util.Bag, sim.util.IntBag, sim.util.IntBag)
+//	 */
+//	public void updateMemory(TWEntity[][] sensed, int xOffset, int yOffset) {
+//		for (int x = 0; x < sensed.length; x++) {
+//			for (int y = 0; y < sensed[x].length; y++) {
+//				objects[x + xOffset][y + yOffset] = new TWAgentPercept(sensed[x][y], this.getSimulationTime());
+//			}
+//		}
+//	}
 
 	/**
-	 * removes all facts earlier than now - max memory time. 
+	 * removes all facts earlier than now - max memory time.
 	 * TODO: Other facts are
 	 * remove probabilistically (exponential decay of memory)
 	 */
@@ -214,7 +202,7 @@ public class TWAgentWorkingMemory {
 	/**
 	 * @return
 	 */
-	private double getSimulationTime() {
+	public double getSimulationTime() {
 		return schedule.getTime();
 	}
 
@@ -322,7 +310,7 @@ public class TWAgentWorkingMemory {
 
 	/**
 	 * Is the cell blocked according to our memory?
-	 * 
+	 *
 	 * @param tx x position of cell
 	 * @param ty y position of cell
 	 * @return true if the cell is blocked in our memory
@@ -339,16 +327,59 @@ public class TWAgentWorkingMemory {
 		return (e instanceof TWObstacle);
 	}
 
+	public int distance(int x, int y, int nx, int ny){
+		return Math.abs(x-nx)+Math.abs(y-ny);
+	}
+
+	public int countNewlyExplored(int curX, int curY, int prevX, int prevY, double timestamp){
+		int newCells = 0;
+
+		if(curX>prevX && curY==prevY){
+			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
+				if(me.getEnvironment().isInBounds(curX+Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
+					if(objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
+							|| timestamp - objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT() >=objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX<prevX && curY==prevY){
+			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
+					if(objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()>=objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX==prevX && curY>prevY){
+			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY+Parameters.defaultSensorRange)){
+					if(objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX==prevX && curY<prevY){
+			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY-Parameters.defaultSensorRange)){
+					if(objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()){
+						newCells++;
+					}
+				}
+			}
+		}
+
+		return newCells;
+	}
+
+//	public double getSimulationTime(){
+//		return schedule.getTime();
+//	}
+
 	public ObjectGrid2D getMemoryGrid() {
 		return this.memoryGrid;
-	}
-
-	public TWAgentPercept[][] getObjects() {
-		return this.objects;
-	}
-
-	protected void removeObject(int x, int y){
-		this.objects[x][y]=null;
-		this.memoryGrid.set(x,y,null);
 	}
 }
