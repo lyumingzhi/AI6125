@@ -4,6 +4,7 @@
 package tileworld.environment;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import sim.engine.SimState;
@@ -14,10 +15,9 @@ import sim.util.Int2D;
 import sun.font.TrueTypeFont;
 import tileworld.Parameters;
 import tileworld.TWGUI;
-import tileworld.agent.Message;
+import tileworld.agent.*;
 import tileworld.agent.SimpleTWAgent;
-import tileworld.agent.SimpleTWAgent;
-import tileworld.agent.TWAgent;
+import tileworld.agent.SimpleStateTWAgent;
 
 /**
  * TWEnvironment
@@ -58,14 +58,16 @@ public class TWEnvironment extends SimState implements Steppable {
     private Bag holes;
     private Bag obstacles;
     private TWFuelStation fuelingStation;
+
+    private List<TWAgent> agents;
     
     private ArrayList<Message> messages; // the communication channel
     
     private int reward;
 
-//    private TWFuelStation getFuelingStation() {
-//        return fuelingStation;
-//    }
+    public TWFuelStation getFuelingStation() {
+        return fuelingStation;
+    }
     
     public boolean inFuelStation(TWAgent agent) {
     	return ((agent.x==fuelingStation.x)&&(agent.y==fuelingStation.y));
@@ -110,9 +112,9 @@ public class TWEnvironment extends SimState implements Steppable {
         
         //Now we create some agents
         Int2D pos = this.generateRandomLocation();
-        createAgent(new SimpleTWAgent("agent1", pos.getX(), pos.getY(), this, Parameters.defaultFuelLevel));
+        createAgent(new SimpleStateTWAgent("agent1", pos.getX(), pos.getY(), this, Parameters.defaultFuelLevel));
         pos = this.generateRandomLocation();
-        createAgent(new SimpleTWAgent("agent2", pos.getX(), pos.getY(), this, Parameters.defaultFuelLevel));
+        createAgent(new SimpleStateTWAgent("agent2", pos.getX(), pos.getY(), this, Parameters.defaultFuelLevel));
         
 //        
         //create the fueling station
@@ -196,6 +198,8 @@ public class TWEnvironment extends SimState implements Steppable {
     public ObjectGrid2D getAgentGrid() {
         return agentGrid;
     }
+
+    public List<TWAgent> getAgents() { return agents; }
     
 
 
@@ -377,4 +381,6 @@ public class TWEnvironment extends SimState implements Steppable {
     public void increaseReward(){
     	reward += 1;
     }
+
+
 }
