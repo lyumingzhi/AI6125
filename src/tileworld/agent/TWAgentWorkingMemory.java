@@ -18,6 +18,7 @@ import tileworld.environment.TWHole;
 import tileworld.environment.TWObject;
 import tileworld.environment.TWObstacle;
 import tileworld.environment.TWTile;
+import tileworld.environment.TWFuelStation;//need to change later
 
 /**
  * TWAgentMemory
