@@ -240,10 +240,13 @@ public class TWEnvironment extends SimState implements Steppable {
     public boolean canPickupTile(TWTile tile, TWAgent agent) {
     	if(!agent.sameLocation(tile))
     		return false;
+
     	TWEntity e = (TWEntity) objectGrid.get(tile.x, tile.y);
-    	if(e == null||!(e instanceof TWTile))
-    		return false;
-    	return true;
+    	if(e == null||!(e instanceof TWTile)) {
+            System.out.println("the life time left: " + tile.getTimeLeft(this.schedule.getTime()));
+            return false;
+        }
+        return true;
     }
     
     public boolean canPutdownTile(TWHole hole, TWAgent agent) {

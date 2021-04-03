@@ -44,7 +44,7 @@ public class TWAgentWorkingMemory {
 	/**
 	 * Access to Scedule (TWEnvironment) so that we can retrieve the current timestep of the simulation.
 	 */
-	private Schedule schedule;
+	public Schedule schedule;
 	private TWAgent me;
 	private final static int MAX_TIME = 10;
 	private final static float MEM_DECAY = 0.5f;
@@ -73,6 +73,8 @@ public class TWAgentWorkingMemory {
 	//    private List<TWAgent> neighbouringAgents = new ArrayList<TWAgent>();
 	public int[][]  lastNullPerceptTime;
 	// x, y: the dimension of the grid
+
+	protected Bag sensed;
 	public TWAgentWorkingMemory(TWAgent moi, Schedule schedule, int x, int y) {
 
 		closestInSensorRange = new HashMap<Class<?>, TWEntity>(4);
@@ -88,6 +90,7 @@ public class TWAgentWorkingMemory {
 				this.lastNullPerceptTime[i][j]=-1;
 			}
 		}
+
 	}
 
 	/**
@@ -119,6 +122,9 @@ public class TWAgentWorkingMemory {
 
 		//        me.getEnvironment().getMemoryGrid().clear();  // THis is equivalent to only having sensed area in memory
 		//       this.decayMemory();       // You might want to think about when to call the decay function as well.
+
+		// need to remove
+		this.sensed=sensedObjects;
 		for (int i = 0; i < sensedObjects.size(); i++) {
 			TWEntity o = (TWEntity) sensedObjects.get(i);
 			if (!(o instanceof TWObject)) {

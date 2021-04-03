@@ -144,6 +144,7 @@ public abstract class TWAgent extends TWEntity implements Steppable {
      * @param tile The Tile to pick up
      */
     protected final void pickUpTile(TWTile tile) {
+//        System.out.println("the location of this tile is  "+ tile.getX()+" "+tile.getY());
     	if(this.getEnvironment().canPickupTile(tile, this)) {
 	    	if (carriedTiles.size() < 3){
 	    		carriedTiles.add(tile);

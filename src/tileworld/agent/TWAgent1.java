@@ -332,7 +332,7 @@ public class TWAgent1 extends TWAgent{
         //state 1: ToTile
         //state 2: ToHole
         //state 3: ToFuel
-        System.out.println(" Simple Score: " + this.score+" name "+this.name+ " state: "+this.state+" feul level "+this.fuelLevel);
+        System.out.println(" Simple Score: " + this.score+" name "+this.name+ " state: "+this.state+" feul level "+this.fuelLevel+"~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         // return new TWThought(TWAction.MOVE, getRandomDirection());
         TWThought thought;
 
@@ -453,7 +453,7 @@ public class TWAgent1 extends TWAgent{
             } else if (y < this.getY()) {
                 return TWDirection.N;
             } else {
-                System.out.println("pick up index "+initialx+" "+initialy);
+                System.out.println("pick up index "+initialx+" "+initialy+" the agent is at "+this.getX()+" "+this.getY());
                 return TWDirection.Z;
             }
         }
@@ -524,6 +524,9 @@ public class TWAgent1 extends TWAgent{
             Object tempClosestItem=this.getClosest(TWTile.class);
             if(tempClosestItem!=null){
                 this.targetTile= (TWTile) tempClosestItem;
+//                System.out.println("this tile have time: " +(this.targetTile.getTimeLeft(this.getMemory().schedule.getTime())+" the real location "+
+//                        this.targetTile.getX()+" "+this.targetTile.getY()+
+//                        " was record at "+this.getX()+" "+this.getY()));
             }
             else {
                 this.targetTile = null;
@@ -532,6 +535,13 @@ public class TWAgent1 extends TWAgent{
         if (this.targetTile == null) return this.getExploreThought();
         TWDirection d = this.getOneStepDirection(this.targetTile.getX(), this.targetTile.getY());
         if (d == TWDirection.Z) {
+            if(!(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile))
+            {
+                System.out.println("the target tile disappear");
+            }
+//            System.out.println("this tile have time: " +((TWObject)this.getMemory().getMemoryGrid().get(this.getX(),this.getY())).getTimeLeft(this.getMemory().schedule.getTime())+" the real location "+
+//                    ((TWObject)this.getMemory().getMemoryGrid().get(this.getX(),this.getY())).getX()+" "+((TWObject)this.getMemory().getMemoryGrid().get(this.getX(),this.getY())).getY()+
+//                    " was record at "+this.getX()+" "+this.getY());
             TWThought t = new TWThought(TWAction.PICKUP, d);
             t.setTile(this.targetTile);
             this.targetTile = null;
