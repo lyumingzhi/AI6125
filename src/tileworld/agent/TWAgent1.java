@@ -1,10 +1,12 @@
 package tileworld.agent;
 
+import sim.util.Int2D;
 import tileworld.Parameters;
 import tileworld.environment.*;
 
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.Arrays;
 
@@ -485,7 +487,131 @@ public class TWAgent1 extends TWAgent{
     }
 
     private TWThought getExploreThought() {
-        return new TWThought(TWAction.MOVE, this.getRandomDirection());
+//        return new TWThought(TWAction.MOVE, this.getRandomDirection());
+        java.util.List<TWDirection> iMoves = getIndividualMaxExploreDirection(x, y);
+        //        ArrayList<TWAgent> otheragent = this.otherAgents;
+        if (this.otherAgents != null) {
+            for (int i = 0; i < this.otherAgents.size(); i++) {
+                java.util.List<TWDirection> gMoves = getGroupMaxExploreDirection(x, y, this.otherAgents.get(i).getX(), this.otherAgents.get(i).getY(), iMoves);
+                if (gMoves.contains(TWDirection.W) && gMoves.contains(TWDirection.N)) {
+                    double t = Math.random();
+                    if (t < 0.5) {
+                        return new TWThought(TWAction.MOVE, TWDirection.W);
+                    } else {
+                        return new TWThought(TWAction.MOVE, TWDirection.N);
+                    }
+                }
+                if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
+                    double t = Math.random();
+                    if (t < 0.5) {
+                        return new TWThought(TWAction.MOVE, TWDirection.W);
+                    } else {
+                        return new TWThought(TWAction.MOVE, TWDirection.N);
+                    }
+                }
+
+                int rand = (int) (Math.random() * gMoves.size());
+                return new TWThought(TWAction.MOVE, gMoves.get(rand));
+            }
+        }
+        else {
+            if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
+                double t = Math.random();
+                if (t < 0.5) {
+                    return new TWThought(TWAction.MOVE, TWDirection.W);
+                } else {
+                    return new TWThought(TWAction.MOVE, TWDirection.N);
+                }
+            }
+            int rand = (int) (Math.random() * iMoves.size());
+            return new TWThought(TWAction.MOVE, iMoves.get(rand));
+        }
+        int rand = (int) (Math.random() * iMoves.size());
+        return new TWThought(TWAction.MOVE, iMoves.get(rand));
+    }
+
+//    private double fuelControlUrgency(int x, int y, double fuelLevel){
+//        if (fuelLevel >= this.getFuelDistance() + 20){
+//            return 1;
+//        }else{
+//            double t = ()
+//        }
+//    }
+
+//    private TWAgent getTheOtherAgent(){
+//        for(TWAgent agent : this.getEnvironment().getAgents()){
+//            if(agent!=this){ return agent; }
+//        }
+//        return null;
+//    }
+
+    private java.util.List<TWDirection> getIndividualMaxExploreDirection(int curX, int curY){
+        java.util.List<TWDirection> moves = new ArrayList();
+
+        int maxExplored = 0;
+        int explored;
+        if(this.getEnvironment().isInBounds(curX+1, curY)){
+            explored = this.getMemory().countNewlyExplored(curX+1, curY, curX, curY, memory.getSimulationTime());
+            if(explored>maxExplored){
+                maxExplored = explored;
+                moves = new ArrayList();
+                moves.add(TWDirection.E);
+            } else if(explored==maxExplored){
+                moves.add(TWDirection.E);
+            }
+        }
+        if(this.getEnvironment().isInBounds(curX-1, curY)){
+            explored = this.getMemory().countNewlyExplored(curX-1, curY, curX, curY, memory.getSimulationTime());
+            if(explored>maxExplored){
+                maxExplored = explored;
+                moves = new ArrayList();
+                moves.add(TWDirection.W);
+            } else if(explored==maxExplored){
+                moves.add(TWDirection.W);
+            }
+        }
+        if(this.getEnvironment().isInBounds(curX, curY+1)){
+            explored = this.getMemory().countNewlyExplored(curX, curY+1, curX, curY, memory.getSimulationTime());
+            if(explored>maxExplored){
+                maxExplored = explored;
+                moves = new ArrayList();
+                moves.add(TWDirection.S);
+            } else if(explored==maxExplored){
+                moves.add(TWDirection.S);
+            }
+        }
+        if(this.getEnvironment().isInBounds(curX, curY-1)){
+            explored = this.getMemory().countNewlyExplored(curX, curY-1, curX, curY, memory.getSimulationTime());
+            if(explored>maxExplored){
+                maxExplored = explored;
+                moves = new ArrayList();
+                moves.add(TWDirection.N);
+            } else if(explored==maxExplored){
+                moves.add(TWDirection.N);
+            }
+        }
+        return moves;
+    }
+
+
+    private java.util.List<TWDirection> getGroupMaxExploreDirection(int curX, int curY, int agentX, int agentY, java.util.List<TWDirection> directions){
+        List<TWDirection> result = new ArrayList();
+        for(TWDirection direction : directions){
+
+            Int2D nextPos = direction.advance(new Int2D(curX, curY));
+
+            int newDist = this.getMemory().distance(nextPos.x, nextPos.y, agentX, agentY);
+            int oldDist = this.getMemory().distance(curX, curY, agentX, agentY);
+
+            if(newDist < oldDist && (Math.abs(nextPos.x - agentX)>2*Parameters.defaultSensorRange+1 || Math.abs(nextPos.y - agentY)>2*Parameters.defaultSensorRange+1)){
+                result.add(direction);
+            }
+        }
+        if(result.isEmpty()){
+            return directions;
+        } else{
+            return result;
+        }
     }
 
     private  int getFuelDistance() {
