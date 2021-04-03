@@ -42,6 +42,7 @@ public class TWAgent1 extends TWAgent{
     protected int distances[][];
     protected ArrayList<int[]> calculatedArea;
     protected ArrayList<int[]> toCalculateArea;
+    protected int checkRange=7;
     public TWAgent1(String name,int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env,fuelLevel);
         fuelTolerance=0.9;
@@ -50,6 +51,7 @@ public class TWAgent1 extends TWAgent{
         this.name=name;
         this.otherAgents = new ArrayList<TWAgent>();
         this.state=State.GET_FUEL;
+
     }
 
     @Override
@@ -169,7 +171,11 @@ public class TWAgent1 extends TWAgent{
 
         calculatedArea.add(new int[]{source_x,source_y});
         distances[source_x][source_y]=0;
-        while(ifArrayContain(distances,-1)){
+        int floodRange=0;
+        int ifFindTile=0;
+        int ifFindHole=0;
+        int ifFindFuelStation=0;
+        while(ifArrayContain(distances,-1) ){
 //            System.out.println("it is in waterflood\n");
             this.toCalculateArea=getSurround(this.calculatedArea);
             int tempDistances[][]=new int[this.MapSizeX][this.MapSizeY];
@@ -210,6 +216,7 @@ public class TWAgent1 extends TWAgent{
                     if(ifchange==1){
                         break;
                     }
+
                 }
                 if(ifchange==0){
                     System.out.println("to and calculatedArea: "+this.toCalculateArea.size()+" "+this.calculatedArea.size());
@@ -218,12 +225,21 @@ public class TWAgent1 extends TWAgent{
                     this.displayMap(this.distances);
                     System.out.println("there is error in calculating surrounding points\n");
                 }
+                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWTile){
+                    ifFindTile=1;
+                }
+                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWHole){
+                    ifFindHole=1;
+                }
+                if(surroundpoint[0]==this.fuelx &&surroundpoint[1]==this.fuely){
+                    ifFindFuelStation=1;
+                }
             }
             this.calculatedArea.addAll(this.toCalculateArea);
             this.toCalculateArea=new ArrayList<int[]>();
             int ifchange1=0;
-            for (int i=1;i<this.MapSizeX;i++){
-                for(int j=1;j<this.MapSizeY;j++){
+            for (int i=0;i<this.MapSizeX;i++){
+                for(int j=0;j<this.MapSizeY;j++){
                     if(tempDistances[i][j]!=distances[i][j]){
                         ifchange1=1;
                         break;
@@ -233,20 +249,22 @@ public class TWAgent1 extends TWAgent{
                     break;
                 }
             }
-            if(ifchange1!=1){
+            floodRange+=1;
+//            System.out.println("if change: "+ifchange1+" iffindtile "+ifFindTile+" iffindhole "+ifFindHole+" iffindfuelstation "+ifFindFuelStation+" floodRange "+floodRange);
+            if(ifchange1!=1|| ((floodRange==this.checkRange || (ifFindTile==1 && ifFindHole==1))&& ifFindFuelStation==1) ){
                 break;
             }
         }
     }
-    public Boolean checkCheckable(int aimx, int aimy){
-        if(this.getEnvironment().isInBounds(aimx,aimy)
-                && (!(this.memory.getMemoryGrid().get(aimx,aimy) instanceof TWObstacle)
-                || (aimx==this.getX() && aimy==this.getY()))){
-            return true;
+    public Boolean checkCheckable(int aimx, int aimy) {
+        for (TWAgent otherAgent : this.otherAgents) {
+            if (this.getEnvironment().isInBounds(aimx, aimy)
+                    && (!(this.memory.getMemoryGrid().get(aimx, aimy) instanceof TWObstacle)
+                    || (aimx == this.getX() && aimy == this.getY() || (aimx == otherAgent.getX() && aimy == otherAgent.getY())))) {
+                return true;
+            }
         }
-        else{
-            return false;
-        }
+        return false;
     }
     public ArrayList<int[]> routeByWaterFlood(int source_x,int source_y,int target_x,int target_y){
         int x=target_x;
@@ -336,8 +354,15 @@ public class TWAgent1 extends TWAgent{
         // return new TWThought(TWAction.MOVE, getRandomDirection());
         TWThought thought;
 
+        this.fuelx=this.getEnvironment().getFuelingStation().getX();
+        this.fuely=this.getEnvironment().getFuelingStation().getY();///need to change after inventing the algorithm to find fuel
+
+        //firstly communicate with other agents and update memory
+        this.communicate();
+        this.getMemory().updateMemorWithCommunication(this.otherAgents);
+
         this.waterFlood(this.getX(),this.getY());
-//        displayMap(this.distances);
+        displayMap(this.distances);
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought();

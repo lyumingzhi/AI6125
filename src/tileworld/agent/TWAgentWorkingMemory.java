@@ -48,7 +48,8 @@ public class TWAgentWorkingMemory {
 	private TWAgent me;
 	private final static int MAX_TIME = 10;
 	private final static float MEM_DECAY = 0.5f;
-
+	public int MapSizeX;
+	public int MapSizeY;
 	private ObjectGrid2D memoryGrid;
 
 	/*
@@ -79,7 +80,8 @@ public class TWAgentWorkingMemory {
 
 		closestInSensorRange = new HashMap<Class<?>, TWEntity>(4);
 		this.me = moi;
-
+		this.MapSizeX=x;
+		this.MapSizeY=y;
 		this.objects = new TWAgentPercept[x][y];
 
 		this.schedule = schedule;
@@ -175,9 +177,59 @@ public class TWAgentWorkingMemory {
 	//        }
 	//    }
 
+
+	public void updateMemorWithCommunication(ArrayList<TWAgent> otherAgents){
+		for(TWAgent OtherAgent:otherAgents){
+			TWAgentWorkingMemory memoryOfOtherAgent=OtherAgent.getMemory();
+			assert (memoryOfOtherAgent.getMemoryGrid().getHeight()==this.getMemoryGrid().getHeight()
+			&&memoryOfOtherAgent.getMemoryGrid().getWidth()==this.getMemoryGrid().getWidth());
+			ObjectGrid2D otherMemoryGrid=memoryOfOtherAgent.getMemoryGrid();
+			TWAgentPercept[][] otherObjects=memoryOfOtherAgent.getObjects();
+			int[][] otherLastNullPerceptTime=memoryOfOtherAgent.lastNullPerceptTime;
+			for(int i=0;i<this.MapSizeX;i++){
+				for(int j=0;j<this.MapSizeY;j++){
+					if(this.memoryGrid.get(i,j)==null && otherMemoryGrid.get(i,j)==null ){
+						assert (this.objects[i][j]==null&& otherObjects[i][j]==null);
+//						if(this.lastNullPerceptTime[i][j]<otherLastNullPerceptTime[i][j]){
+//							this.lastNullPerceptTime[i][j]=otherLastNullPerceptTime[i][j];
+//						}
+					}
+					if(this.lastNullPerceptTime[i][j]<otherLastNullPerceptTime[i][j]){
+						this.lastNullPerceptTime[i][j]=otherLastNullPerceptTime[i][j];
+					}
+					if(this.memoryGrid.get(i,j)==null && otherMemoryGrid.get(i,j)!=null){
+						assert (this.objects[i][j]==null&& otherObjects[i][j]!=null);
+						if(this.lastNullPerceptTime[i][j]<otherObjects[i][j].getT()){
+//							this.lastNullPerceptTime[i][j]=otherLastNullPerceptTime[i][j]; //need more consideratoin
+							this.objects[i][j]=otherObjects[i][j];
+							memoryGrid.set(i,j,otherMemoryGrid.get(i,j));
+							this.memorySize++;
+						}
+					}
+					else if(this.memoryGrid.get(i,j)!=null && otherMemoryGrid.get(i,j)==null){
+						assert (this.objects[i][j]!=null&& otherObjects[i][j]==null);
+						if(this.objects[i][j].getT()<otherLastNullPerceptTime[i][j]){
+							this.lastNullPerceptTime[i][j]=otherLastNullPerceptTime[i][j];
+							if (this.memoryGrid.get(i,j) instanceof TWObject){
+								this.memorySize--;
+							}
+							this.removeObject(i,j);
+						}
+					}
+					else if(this.memoryGrid.get(i,j)!=null && otherMemoryGrid.get(i,j)!=null){
+						assert (this.objects[i][j]!=null&& otherObjects[i][j]!=null);
+						if(this.objects[i][j].getT()<otherObjects[i][j].getT()){
+							this.objects[i][j]=otherObjects[i][j];
+							memoryGrid.set(i,j,otherMemoryGrid.get(i,j));
+						}
+					}
+				}
+			}
+		}
+	}
 	/**
 	 * updates memory using 2d array of sensor range - currently not used
-	 * @see TWAgentWorkingMemory#updateMemory(sim.util.Bag, sim.util.IntBag, sim.util.IntBag)
+	 * @see TWAgentWorkingMemory updateMemory(sim.util.Bag, sim.util.IntBag, sim.util.IntBag)
 	 */
 	public void updateMemory(TWEntity[][] sensed, int xOffset, int yOffset) {
 		for (int x = 0; x < sensed.length; x++) {
