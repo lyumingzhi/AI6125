@@ -221,7 +221,7 @@ public class TWAgentWorkingMemory {
 	/**
 	 * @return
 	 */
-	private double getSimulationTime() {
+	public double getSimulationTime() {
 		return schedule.getTime();
 	}
 
@@ -376,5 +376,53 @@ public class TWAgentWorkingMemory {
 	protected void removeObject(int x, int y){
 		this.objects[x][y]=null;
 		this.memoryGrid.set(x,y,null);
+	}
+
+	public int distance(int x, int y, int nx, int ny){
+		return Math.abs(x-nx)+Math.abs(y-ny);
+	}
+
+	public int countNewlyExplored(int curX, int curY, int prevX, int prevY, double timestamp){
+		int newCells = 0;
+
+		if(curX>prevX && curY==prevY){
+			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
+				if(me.getEnvironment().isInBounds(curX+Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
+					if(objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
+							|| timestamp - objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT() >=objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX<prevX && curY==prevY){
+			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
+					if(objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()>=objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX==prevX && curY>prevY){
+			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY+Parameters.defaultSensorRange)){
+					if(objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()){
+						newCells++;
+					}
+				}
+			}
+		} else if(curX==prevX && curY<prevY){
+			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
+				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY-Parameters.defaultSensorRange)){
+					if(objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange] == null
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()){
+						newCells++;
+					}
+				}
+			}
+		}
+
+		return newCells;
 	}
 }
