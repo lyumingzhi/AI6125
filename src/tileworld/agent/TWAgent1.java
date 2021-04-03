@@ -38,7 +38,7 @@ public class TWAgent1 extends TWAgent{
     protected int f_score[][];;
     protected int came_from[][][];
 //    ~~~~~~~~~~~~~~~~~~water flood~~~~~~~~~~~~~~~~~
-    protected int lastpoint[][][];
+    protected int lastPointMap[][][];
     protected int distances[][];
     protected ArrayList<int[]> calculatedArea;
     protected ArrayList<int[]> toCalculateArea;
@@ -159,7 +159,7 @@ public class TWAgent1 extends TWAgent{
         return surroundPoints;
     }
     public void waterFlood(int source_x, int source_y){
-        this.lastpoint=new int[this.MapSizeX][this.MapSizeY][2];
+        this.lastPointMap=new int[this.MapSizeX][this.MapSizeY][2];
         this.distances=new int[this.MapSizeX][this.MapSizeY];
         this.calculatedArea=new ArrayList<int[]>();
         this.toCalculateArea=new ArrayList<int[]>();
@@ -200,8 +200,8 @@ public class TWAgent1 extends TWAgent{
 //                            System.out.println("i: "+i+" j :"+j);
                             if(ifListContain(this.calculatedArea,new int[]{surroundpoint[0]+i,surroundpoint[1]+j})){
                                 this.distances[surroundpoint[0]][surroundpoint[1]]=distances[surroundpoint[0]+i][surroundpoint[1]+j]+1;
-                                this.lastpoint[surroundpoint[0]][surroundpoint[1]][0]=surroundpoint[0]+i;
-                                this.lastpoint[surroundpoint[0]][surroundpoint[1]][1]=surroundpoint[1]+j;
+                                this.lastPointMap[surroundpoint[0]][surroundpoint[1]][0]=surroundpoint[0]+i;
+                                this.lastPointMap[surroundpoint[0]][surroundpoint[1]][1]=surroundpoint[1]+j;
                                 ifchange=1;
                             }
 //
@@ -254,8 +254,8 @@ public class TWAgent1 extends TWAgent{
         ArrayList<int[]> resultRoute=new ArrayList<int[]>();
         resultRoute.add(new int[]{x,y});
         while(x!=source_x||y!=source_y){
-            x=lastpoint[target_x][target_y][0];
-            y=lastpoint[target_x][target_y][1];
+            x=lastPointMap[target_x][target_y][0];
+            y=lastPointMap[target_x][target_y][1];
             resultRoute.add(new int[]{x,y});
         }
         return resultRoute;
@@ -332,7 +332,7 @@ public class TWAgent1 extends TWAgent{
         //state 1: ToTile
         //state 2: ToHole
         //state 3: ToFuel
-        System.out.println("Simple Score: " + this.score+" state: "+this.state);
+        System.out.println(" Simple Score: " + this.score+" name "+this.name+ " state: "+this.state+" feul level "+this.fuelLevel);
         // return new TWThought(TWAction.MOVE, getRandomDirection());
         TWThought thought;
 
@@ -433,6 +433,16 @@ public class TWAgent1 extends TWAgent{
     }
 
     private TWDirection getOneStepDirection(int x, int y) {
+
+        int initialx=x;
+        int initialy=y;
+        int []lastpoint=this.lastPointMap[x][y];
+        while(!(lastpoint[0]==this.getX()&& lastpoint[1]==this.getY())&&!(x==this.getX()&&y==this.getY())){
+             x=lastpoint[0];
+             y=lastpoint[1];
+             lastpoint=this.lastPointMap[x][y];
+        }
+        assert ((x-this.getX())*(y-this.getY())==0);
         if (x > this.getX()) {
             return TWDirection.E;
         } else if (x < this.getX()) {
@@ -443,6 +453,7 @@ public class TWAgent1 extends TWAgent{
             } else if (y < this.getY()) {
                 return TWDirection.N;
             } else {
+                System.out.println("pick up index "+initialx+" "+initialy);
                 return TWDirection.Z;
             }
         }
@@ -484,7 +495,7 @@ public class TWAgent1 extends TWAgent{
     }
 
     private TWThought getHoleThought() {
-        if (this.targetHole == null) {
+//        if (this.targetHole == null) {
 //            this.targetHole = this.getMemory().getNearbyHole(this.getX(), this.getY(), 90);
             Object tempClosestItem=this.getClosest(TWHole.class);
             if(tempClosestItem!=null){
@@ -493,7 +504,7 @@ public class TWAgent1 extends TWAgent{
             else {
                 this.targetHole = null;
             }
-        }
+//        }
         if (this.targetHole == null) return this.getExploreThought();
 
         TWDirection d = this.getOneStepDirection(this.targetHole.getX(), this.targetHole.getY());
