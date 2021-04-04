@@ -129,7 +129,7 @@ public class TWAgentWorkingMemory {
 		this.sensed=sensedObjects;
 		for (int i = 0; i < sensedObjects.size(); i++) {
 			TWEntity o = (TWEntity) sensedObjects.get(i);
-			if (!(o instanceof TWObject)) {
+			if (!(o instanceof TWObject) && !(o instanceof TWFuelStation)) {
 
 				this.lastNullPerceptTime[objectXCoords.get(i)][objectYCoords.get(i)]=(int)this.schedule.getTime();
 				if (this.memoryGrid.get(objectXCoords.get(i),objectYCoords.get(i)) instanceof TWObject){
