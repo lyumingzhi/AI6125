@@ -374,6 +374,22 @@ public class TWAgent1 extends TWAgent{
         this.checkFuelStation();
         this.waterFlood(this.getX(),this.getY());
 //        displayMap(this.distances);
+
+        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile){
+            if(this.carriedTiles.size()<3) {
+                TWDirection d = TWDirection.Z;
+                thought = new TWThought(TWAction.PICKUP,d);// if there is a tile at the current position, pick it up without thinking
+                return thought;
+            }
+        }
+        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWHole){
+            if(this.carriedTiles.size()>0) {
+                TWDirection d = TWDirection.Z;
+                thought = new TWThought(TWAction.PUTDOWN,d);// if there is a hole at the current position, pick it down without thinking
+                return thought;
+            }
+        }
+
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought();
