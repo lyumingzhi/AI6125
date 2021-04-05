@@ -40,6 +40,8 @@ public abstract class TWAgent extends TWEntity implements Steppable {
         return score;
     }
 
+    public TWThought lastThought;
+
     public TWAgent(int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env);
        
@@ -50,6 +52,9 @@ public abstract class TWAgent extends TWEntity implements Steppable {
         this.memory = new TWAgentWorkingMemory(this, env.schedule, env.getxDimension(), env.getyDimension());
 
         this.otherAgents = new ArrayList<TWAgent>();
+
+        lastThought = new TWThought(TWAction.MOVE, TWDirection.E);
+
     }
     /**
      * Fuel level, automatically decremented once per move.
@@ -105,7 +110,7 @@ public abstract class TWAgent extends TWEntity implements Steppable {
      * you can add some other methods too.
      *
      */
-    abstract protected TWThought think();
+    abstract protected TWThought think(TWThought lastThought);
 
     /**
      * Act currently involves moving only, you should modify this.
@@ -226,8 +231,25 @@ public abstract class TWAgent extends TWEntity implements Steppable {
      * @param state
      */
     public final void step(SimState state) {
-        TWThought thought = this.think();
+        TWThought thought = this.think(lastThought);
         this.act(thought);
+        lastThought = thought;
+    }
+
+    protected TWDirection getRandomDirection() {
+
+        TWDirection randomDir = TWDirection.values()[this.getEnvironment().random.nextInt(5)];
+
+        if (this.getX() >= this.getEnvironment().getxDimension()) {
+            randomDir = TWDirection.W;
+        } else if (this.getX() <= 1) {
+            randomDir = TWDirection.E;
+        } else if (this.getY() <= 1) {
+            randomDir = TWDirection.S;
+        } else if (this.getY() >= this.getEnvironment().getxDimension()) {
+            randomDir = TWDirection.N;
+        }
+        return  randomDir;
     }
 
     /**

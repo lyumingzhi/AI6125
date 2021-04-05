@@ -441,7 +441,7 @@ public class TWAgentWorkingMemory {
 			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
 				if(me.getEnvironment().isInBounds(curX+Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
 					if(objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
-							|| timestamp - objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT() >=objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+							|| timestamp - objects[curX+Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT() >= Parameters.lifeTime){
 						newCells++;
 					}
 				}
@@ -450,7 +450,7 @@ public class TWAgentWorkingMemory {
 			for(int y=0;y<2*Parameters.defaultSensorRange+1;y++){
 				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange, curY-Parameters.defaultSensorRange+y)){
 					if(objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y] == null
-							|| timestamp - objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()>=objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()){
+							|| timestamp - objects[curX-Parameters.defaultSensorRange][curY-Parameters.defaultSensorRange+y].getT()>=Parameters.lifeTime){
 						newCells++;
 					}
 				}
@@ -459,7 +459,7 @@ public class TWAgentWorkingMemory {
 			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
 				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY+Parameters.defaultSensorRange)){
 					if(objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange] == null
-							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()){
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY+Parameters.defaultSensorRange].getT()>=Parameters.lifeTime){
 						newCells++;
 					}
 				}
@@ -468,7 +468,7 @@ public class TWAgentWorkingMemory {
 			for(int x=0;x<2*Parameters.defaultSensorRange+1;x++){
 				if(me.getEnvironment().isInBounds(curX-Parameters.defaultSensorRange+x, curY-Parameters.defaultSensorRange)){
 					if(objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange] == null
-							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()>=objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()){
+							|| timestamp - objects[curX-Parameters.defaultSensorRange+x][curY-Parameters.defaultSensorRange].getT()>=Parameters.lifeTime){
 						newCells++;
 					}
 				}

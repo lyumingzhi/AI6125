@@ -28,6 +28,11 @@ public class TWAgent1 extends TWAgent{
     protected double fuelTolerance;
     protected int MapSizeX;
     protected int MapSizeY;
+    protected int DownStep=0;
+    protected int DStep =0;
+    protected int UpStep=0;
+    protected int LeftStep=0;
+    protected int RightStep=0;
     //~~~~~~~~~~~naive~~~~~~
     protected TWFuelStation fuelStation;
     private TWTile targetTile;
@@ -46,7 +51,8 @@ public class TWAgent1 extends TWAgent{
     protected ArrayList<int[]> calculatedArea;
     protected ArrayList<int[]> toCalculateArea;
     protected int checkRange=7;
-    public TWAgent1(String name,int xpos, int ypos, TWEnvironment env, double fuelLevel) {
+    protected int initalPosition[][] = new int[1][2];
+    public TWAgent1(String name, int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env,fuelLevel);
         fuelTolerance=0.9;
         MapSizeX=this.getEnvironment().getxDimension();
@@ -54,6 +60,7 @@ public class TWAgent1 extends TWAgent{
         this.name=name;
         this.otherAgents = new ArrayList<TWAgent>();
         this.state=State.GET_FUEL;
+
 
     }
 
@@ -355,7 +362,7 @@ public class TWAgent1 extends TWAgent{
             System.out.print("\n");
         }
     }
-    protected TWThought think(){
+    protected TWThought think(TWThought lastThought){
 //        this.sensor.sense();
         //state 0: exploration
         //state 1: ToTile
@@ -373,53 +380,51 @@ public class TWAgent1 extends TWAgent{
         this.getMemory().updateMemorWithCommunication(this.otherAgents);
         this.checkFuelStation();
         this.waterFlood(this.getX(),this.getY());
+        if(this.initalPosition[0][0] == 0 && this.initalPosition[0][1] == 0){
+            this.initalPosition[0][0] = x;
+            this.initalPosition[0][1] = y;
+            for(TWAgent otheragent : this.otherAgents){
+                if(otheragent.getY() >= this.initalPosition[0][1]){
+                    this.initalPosition[0][0] = otheragent.getX();
+                    this.initalPosition[0][1] = otheragent.getY();
+//                    System.out.println('1');
+                }
+            }
+            if(this.initalPosition[0][0] == x && this.initalPosition[0][1] == y){
+                this.initalPosition[0][0] = Parameters.xDimension;
+                this.initalPosition[0][1] = Parameters.yDimension;
+//                this.initalPosition.add(new int[]{Parameters.xDimension, Parameters.yDimension});
+            }
+        }
+//        for(TWAgent otheragent:this.otherAgents){
+//
+//        }
 //        displayMap(this.distances);
-
-        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile &&
-                (this.targetTile==null ||(this.targetTile.getX()!=this.getX()||this.targetTile.getY()!=this.getY()))){
-            if(this.carriedTiles.size()<3) {
-                TWDirection d = TWDirection.Z;
-                thought = new TWThought(TWAction.PICKUP,d);// if there is a tile at the current position, pick it up without thinking
-                thought.setTile((TWTile)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
-                return thought;
-            }
-        }
-        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWHole &&
-                (this.targetHole==null ||(this.targetHole.getX()!=this.getX()||this.targetHole.getY()!=this.getY()))){
-            if(this.carriedTiles.size()>0) {
-                TWDirection d = TWDirection.Z;
-                thought = new TWThought(TWAction.PUTDOWN,d);// if there is a hole at the current position, pick it down without thinking
-                thought.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
-                return thought;
-            }
-        }
-
         switch (this.state) {
             case EXPLORE:
-                thought = this.getExploreThought();
+                thought = this.getExploreThought(lastThought);
                 this.state = State.GET_TILE;
                 break;
             case GET_FUEL:
-                thought = this.getFuelThought();
+                thought = this.getFuelThought(lastThought);
                 if (thought.getAction() == TWAction.REFUEL) {
                     this.state = State.GET_TILE;
                 }
                 break;
             case GET_HOLE:
-                thought = this.getHoleThought();
+                thought = this.getHoleThought(lastThought);
                 if (thought.getAction() == TWAction.PUTDOWN) {
                     this.state = State.GET_TILE;
                 }
                 break;
             case GET_TILE:
-                thought = this.getTileThought();
-                assert(thought.getTile()!=null);
+                thought = this.getTileThought(lastThought);
                 if (thought.getAction() == TWAction.PICKUP) {
                     this.state = State.GET_HOLE;
                 }
                 break;
             default:
-                thought = this.getExploreThought();
+                thought = this.getExploreThought(lastThought);
                 break;
         }
         // No fuel
@@ -537,49 +542,208 @@ public class TWAgent1 extends TWAgent{
         }
     }
 
-    private TWThought getExploreThought() {
-//        return new TWThought(TWAction.MOVE, this.getRandomDirection());
-        java.util.List<TWDirection> iMoves = getIndividualMaxExploreDirection(x, y);
-        //        ArrayList<TWAgent> otheragent = this.otherAgents;
-        if (this.otherAgents != null) {
-            for (int i = 0; i < this.otherAgents.size(); i++) {
-                java.util.List<TWDirection> gMoves = getGroupMaxExploreDirection(x, y, this.otherAgents.get(i).getX(), this.otherAgents.get(i).getY(), iMoves);
-                if (gMoves.contains(TWDirection.W) && gMoves.contains(TWDirection.N)) {
-                    double t = Math.random();
-                    if (t < 0.5) {
-                        return new TWThought(TWAction.MOVE, TWDirection.W);
-                    } else {
-                        return new TWThought(TWAction.MOVE, TWDirection.N);
+
+    private TWThought getExploreThought(TWThought lastThought) {
+        TWDirection newDir = TWDirection.E;
+        int stopX = initalPosition[0][0];
+        int stopY = initalPosition[0][1];
+        double t = Math.random();
+        double time = this.getMemory().schedule.getTime();
+        Object temp = this.memory.getMemoryGrid().get(x, y);
+        TWAction action = TWAction.MOVE;
+        if(temp instanceof TWTile && this.carriedTiles.size()<3){
+//            if(this.getEnvironment().canPickupTile((TWTile) temp, this)) {
+//                action = TWAction.PICKUP;
+//            }
+            action = TWAction.PICKUP;
+        } else if(temp instanceof TWHole && this.carriedTiles.size()>0) {
+            action = TWAction.PUTDOWN;
+        }
+        if (t < 0.00) {
+            newDir = getRandomDirection();
+        } else {
+            if (lastThought.getDirection() == TWDirection.S) {// 上一步是向下
+                if (y + Parameters.defaultSensorRange >= stopY) {
+                    newDir = TWDirection.N;
+                    DownStep = 0;
+                } else if (DownStep == 7 || y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //如果已经向下7步或者到达了最低
+                    if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
+                        newDir = TWDirection.E;
+                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是否在右边界
+                        newDir = TWDirection.W;
                     }
-                }
-                if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
-                    double t = Math.random();
-                    if (t < 0.5) {
-                        return new TWThought(TWAction.MOVE, TWDirection.W);
+                    DownStep = 0;
+                } else if (DStep == 1) {
+                    newDir = TWDirection.E;
+                    DStep = 0;
+                } else if (DownStep < 7) {  //向下不足7步，继续向下
+                    Object n = this.memory.getMemoryGrid().get(x, y + 1);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                        newDir = TWDirection.W;
+                        LeftStep++;
+//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
+//                        action = TWAction.PICKUP;
+//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
+//                        action = TWAction.PUTDOWN;
                     } else {
-                        return new TWThought(TWAction.MOVE, TWDirection.N);
+                        newDir = TWDirection.S;
+                        DownStep++;
                     }
                 }
 
-                int rand = (int) (Math.random() * gMoves.size());
-                return new TWThought(TWAction.MOVE, gMoves.get(rand));
-            }
-        }
-        else {
-            if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
-                double t = Math.random();
-                if (t < 0.5) {
-                    return new TWThought(TWAction.MOVE, TWDirection.W);
+            } else if (lastThought.getDirection() == TWDirection.E) { //上一步是向右
+                if (y + Parameters.defaultSensorRange >= stopY) {
+                    newDir = TWDirection.N;
+                    RightStep = 0;
+                } else if (RightStep == 1) {
+                    newDir = TWDirection.N;
+                    RightStep = 0;
+                } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
+                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
+//                    TWDirection newDir = getRandomDirection();
+                        newDir = TWDirection.N;
+                    } else {
+                        newDir = TWDirection.S;
+                        DownStep++;
+                    }
+                } else { //没到右边界，继续向右
+                    Object n = this.memory.getMemoryGrid().get(x+1, y);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                        newDir = TWDirection.S;
+                        DStep++;
+//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
+//                        action = TWAction.PICKUP;
+//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
+//                        action = TWAction.PUTDOWN;
+                    } else {
+                        newDir = TWDirection.E;
+                    }
+                }
+            } else if (lastThought.getDirection() == TWDirection.W) { //上一步是向左
+                if (y + Parameters.defaultSensorRange >= stopY) {
+                    newDir = TWDirection.N;
+                } else if (LeftStep == 1) {
+                    newDir = TWDirection.S;
+                    LeftStep = 0;
+                } else if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
+                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
+                        newDir = TWDirection.N;
+                    } else {
+                        newDir = TWDirection.S;
+                        DownStep++;
+                    }
+                } else { //没左到边界，继续向左
+                    Object n = this.memory.getMemoryGrid().get(x-1, y);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                        newDir = TWDirection.N;
+                        UpStep++;
+//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
+//                        action = TWAction.PICKUP;
+//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
+//                        action = TWAction.PUTDOWN;
+                    } else {
+                        newDir = TWDirection.W;
+                    }
+                }
+            } else { //上一步是向上
+                if (y - Parameters.defaultSensorRange <= 0) { //判断是否到了上边界
+                    if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
+                        newDir = TWDirection.E;
+                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
+                        newDir = TWDirection.W;
+                    } else {
+                        newDir = TWDirection.W;
+                    }
+                } else if (UpStep == 1) {
+                    newDir = TWDirection.W;
+                    UpStep = 0;
                 } else {
-                    return new TWThought(TWAction.MOVE, TWDirection.N);
+                    Object n = this.memory.getMemoryGrid().get(x, y-1);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                        newDir = TWDirection.E;
+                        RightStep++;
+//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
+//                        action = TWAction.PICKUP;
+//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
+//                        action = TWAction.PUTDOWN;
+                    } else {
+                        newDir = TWDirection.N;
+                    }
                 }
             }
-            int rand = (int) (Math.random() * iMoves.size());
-            return new TWThought(TWAction.MOVE, iMoves.get(rand));
         }
-        int rand = (int) (Math.random() * iMoves.size());
-        return new TWThought(TWAction.MOVE, iMoves.get(rand));
+        TWThought tt = new TWThought(action, newDir);
+        if(action==TWAction.PICKUP){
+            tt.setTile((TWTile) temp);
+        } else if (action==TWAction.PUTDOWN){
+            tt.setHole((TWHole) temp);
+        }
+        return tt;
     }
+
+
+
+//    private TWThought getExploreThought() {
+//
+////        if(x-Parameters.defaultSensorRange<=0 && y-Parameters.defaultSensorRange <=0){
+////            return new TWThought(TWAction.MOVE, TWDirection.E);
+////        }
+////        if(x-Parameters.defaultSensorRange<=0 && y+Parameters.defaultSensorRange >= Parameters.yDimension){
+////            return new TWThought(TWAction.MOVE, TWDirection.N);
+////        }
+////        if(x+Parameters.defaultSensorRange>=Parameters.xDimension && y-Parameters.defaultSensorRange <=0){
+////            return new TWThought(TWAction.MOVE, TWDirection.S);
+////        }
+////        if(x+Parameters.defaultSensorRange>=Parameters.xDimension && y+Parameters.defaultSensorRange >= Parameters.yDimension){
+////            return new TWThought(TWAction.MOVE, TWDirection.W);
+////        }
+////        return new TWThought(TWAction.MOVE, this.getRandomDirection());
+//        java.util.List<TWDirection> iMoves = getIndividualMaxExploreDirection(x, y);
+//        //        ArrayList<TWAgent> otheragent = this.otherAgents;
+//        if (this.otherAgents != null) {
+//            java.util.List<TWDirection> gMoves = new ArrayList<>(Arrays.asList(TWDirection.W, TWDirection.E, TWDirection.N, TWDirection.S));
+//            for (int i = 0; i < this.otherAgents.size(); i++) {
+//                gMoves = getGroupMaxExploreDirection(x, y, this.otherAgents.get(i).getX(), this.otherAgents.get(i).getY(), gMoves);
+////                if (gMoves.contains(TWDirection.W) && gMoves.contains(TWDirection.N)) {
+////                    double t = Math.random();
+////                    if (t < 0.5) {
+////                        return new TWThought(TWAction.MOVE, TWDirection.W);
+////                    } else {
+////                        return new TWThought(TWAction.MOVE, TWDirection.N);
+////                    }
+////                }
+////                if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
+////                    double t = Math.random();
+////                    if (t < 0.5) {
+////                        return new TWThought(TWAction.MOVE, TWDirection.W);
+////                    } else {
+////                        return new TWThought(TWAction.MOVE, TWDirection.N);
+////                    }
+////                }
+//            }
+//            iMoves.retainAll(gMoves);
+//            if (iMoves.size()>0) {
+//                int rand = (int) (Math.random() * iMoves.size());
+//                return new TWThought(TWAction.MOVE, iMoves.get(rand));
+//            }else {
+//
+//                int rand = (int) (Math.random() * gMoves.size());
+//                return new TWThought(TWAction.MOVE, gMoves.get(rand));
+//            }
+//        }
+//        else {
+//            if (iMoves.contains(TWDirection.W) && iMoves.contains(TWDirection.N)) {
+//                double t = Math.random();
+//                if (t < 0.5) {
+//                    return new TWThought(TWAction.MOVE, TWDirection.W);
+//                } else {
+//                    return new TWThought(TWAction.MOVE, TWDirection.N);
+//                }
+//            }
+//            int rand = (int) (Math.random() * iMoves.size());
+//            return new TWThought(TWAction.MOVE, iMoves.get(rand));
+//        }
+//    }
 
 //    private double fuelControlUrgency(int x, int y, double fuelLevel){
 //        if (fuelLevel >= this.getFuelDistance() + 20){
@@ -596,74 +760,6 @@ public class TWAgent1 extends TWAgent{
 //        return null;
 //    }
 
-    private java.util.List<TWDirection> getIndividualMaxExploreDirection(int curX, int curY){
-        java.util.List<TWDirection> moves = new ArrayList();
-
-        int maxExplored = 0;
-        int explored;
-        if(this.getEnvironment().isInBounds(curX+1, curY)){
-            explored = this.getMemory().countNewlyExplored(curX+1, curY, curX, curY, memory.getSimulationTime());
-            if(explored>maxExplored){
-                maxExplored = explored;
-                moves = new ArrayList();
-                moves.add(TWDirection.E);
-            } else if(explored==maxExplored){
-                moves.add(TWDirection.E);
-            }
-        }
-        if(this.getEnvironment().isInBounds(curX-1, curY)){
-            explored = this.getMemory().countNewlyExplored(curX-1, curY, curX, curY, memory.getSimulationTime());
-            if(explored>maxExplored){
-                maxExplored = explored;
-                moves = new ArrayList();
-                moves.add(TWDirection.W);
-            } else if(explored==maxExplored){
-                moves.add(TWDirection.W);
-            }
-        }
-        if(this.getEnvironment().isInBounds(curX, curY+1)){
-            explored = this.getMemory().countNewlyExplored(curX, curY+1, curX, curY, memory.getSimulationTime());
-            if(explored>maxExplored){
-                maxExplored = explored;
-                moves = new ArrayList();
-                moves.add(TWDirection.S);
-            } else if(explored==maxExplored){
-                moves.add(TWDirection.S);
-            }
-        }
-        if(this.getEnvironment().isInBounds(curX, curY-1)){
-            explored = this.getMemory().countNewlyExplored(curX, curY-1, curX, curY, memory.getSimulationTime());
-            if(explored>maxExplored){
-                maxExplored = explored;
-                moves = new ArrayList();
-                moves.add(TWDirection.N);
-            } else if(explored==maxExplored){
-                moves.add(TWDirection.N);
-            }
-        }
-        return moves;
-    }
-
-
-    private java.util.List<TWDirection> getGroupMaxExploreDirection(int curX, int curY, int agentX, int agentY, java.util.List<TWDirection> directions){
-        List<TWDirection> result = new ArrayList();
-        for(TWDirection direction : directions){
-
-            Int2D nextPos = direction.advance(new Int2D(curX, curY));
-
-            int newDist = this.getMemory().distance(nextPos.x, nextPos.y, agentX, agentY);
-            int oldDist = this.getMemory().distance(curX, curY, agentX, agentY);
-
-            if(newDist < oldDist && (Math.abs(nextPos.x - agentX)>2*Parameters.defaultSensorRange+1 || Math.abs(nextPos.y - agentY)>2*Parameters.defaultSensorRange+1)){
-                result.add(direction);
-            }
-        }
-        if(result.isEmpty()){
-            return directions;
-        } else{
-            return result;
-        }
-    }
 
     private  int getFuelDistance() {
         if (this.fuelStation == null) {
@@ -691,7 +787,7 @@ public class TWAgent1 extends TWAgent{
             System.out.println(this.name + " find the fuelStation!");
         }
     }
-    private TWThought getFuelThought() {
+    private TWThought getFuelThought(TWThought lastThought) {
 //        if (this.fuelStation == null|| (this.fuelx==-1|| this.fuely==-1)) {
 //            TWFuelStation tile = this.getMemory().getNearbyFuelStation(this.getX(), this.getY());
 //            if (tile == null) {
@@ -717,7 +813,7 @@ public class TWAgent1 extends TWAgent{
 //        }
         if (this.fuelStation == null|| (this.fuelx==-1|| this.fuely==-1)){
             System.out.println(this.name+" try to explore to find fuel");
-            return this.getExploreThought();
+            return this.getExploreThought(lastThought);
         }
 //        TWDirection d = this.getOneStepDirection(
 //                this.fuelStation.getX(), this.fuelStation.getY());
@@ -730,32 +826,18 @@ public class TWAgent1 extends TWAgent{
         }
     }
 
-    private TWThought getHoleThought() {
+    private TWThought getHoleThought(TWThought lastThought) {
 //        if (this.targetHole == null) {
 //            this.targetHole = this.getMemory().getNearbyHole(this.getX(), this.getY(), 90);
-            Object tempClosestItem = this.getClosest(TWHole.class);
-            if(tempClosestItem != null){
-                this.targetHole = (TWHole) tempClosestItem;
+            Object tempClosestItem=this.getClosest(TWHole.class);
+            if(tempClosestItem!=null){
+                this.targetHole= (TWHole) tempClosestItem;
             }
             else {
                 this.targetHole = null;
             }
 //        }
-        if (this.targetHole == null) {
-            return this.getExploreThought();
-        } else {
-            for (int i = 0; i < this.otherAgents.size(); i++) {
-                TWHole otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetHole();
-                if (otherHole != null) {
-                    if (this.targetHole.getX() == otherHole.getX() &&
-                            this.targetHole.getY() == otherHole.getY()) {
-                        this.targetHole = null;
-                        return this.getExploreThought();
-                    }
-
-                }
-            }
-        }
+        if (this.targetHole == null) return this.getExploreThought(lastThought);
 
         TWDirection d = this.getOneStepDirection(this.targetHole.getX(), this.targetHole.getY());
         if (d == TWDirection.Z) {
@@ -768,7 +850,7 @@ public class TWAgent1 extends TWAgent{
         }
     }
 
-    private  TWThought getTileThought() {
+    private  TWThought getTileThought(TWThought lastThought) {
 //        if (this.targetTile == null) {
 //            this.targetTile = this.getMemory().getNearbyTile(this.getX(), this.getY(), 100);
             Object tempClosestItem=this.getClosest(TWTile.class);
@@ -782,20 +864,7 @@ public class TWAgent1 extends TWAgent{
                 this.targetTile = null;
             }
 //        }
-        if (this.targetTile == null) {
-            return this.getExploreThought();
-        } else {
-            for (int i = 0; i < this.otherAgents.size(); i++) {
-                TWTile otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetTile();
-                if (otherHole != null) {
-                    if (this.targetTile.getX() == otherHole.getX() &&
-                            this.targetTile.getY() == otherHole.getY()) {
-                        this.targetTile = null;
-                        return this.getExploreThought();
-                    }
-                }
-            }
-        }
+        if (this.targetTile == null) return this.getExploreThought(lastThought);
         TWDirection d = this.getOneStepDirection(this.targetTile.getX(), this.targetTile.getY());
         if (d == TWDirection.Z) {
             if(!(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile))
@@ -829,13 +898,5 @@ public class TWAgent1 extends TWAgent{
 
         return randomDir;
 
-    }
-
-    public TWTile getTargetTile() {
-        return this.targetTile;
-    }
-
-    public TWHole getTargetHole() {
-        return  this.targetHole;
     }
 }
