@@ -375,17 +375,21 @@ public class TWAgent1 extends TWAgent{
         this.waterFlood(this.getX(),this.getY());
 //        displayMap(this.distances);
 
-        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile){
+        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile &&
+                (this.targetTile==null ||(this.targetTile.getX()!=this.getX()||this.targetTile.getY()!=this.getY()))){
             if(this.carriedTiles.size()<3) {
                 TWDirection d = TWDirection.Z;
                 thought = new TWThought(TWAction.PICKUP,d);// if there is a tile at the current position, pick it up without thinking
+                thought.setTile((TWTile)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
                 return thought;
             }
         }
-        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWHole){
+        if(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWHole &&
+                (this.targetHole==null ||(this.targetHole.getX()!=this.getX()||this.targetHole.getY()!=this.getY()))){
             if(this.carriedTiles.size()>0) {
                 TWDirection d = TWDirection.Z;
                 thought = new TWThought(TWAction.PUTDOWN,d);// if there is a hole at the current position, pick it down without thinking
+                thought.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
                 return thought;
             }
         }
@@ -409,6 +413,7 @@ public class TWAgent1 extends TWAgent{
                 break;
             case GET_TILE:
                 thought = this.getTileThought();
+                assert(thought.getTile()!=null);
                 if (thought.getAction() == TWAction.PICKUP) {
                     this.state = State.GET_HOLE;
                 }
