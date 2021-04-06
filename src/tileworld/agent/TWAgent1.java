@@ -427,16 +427,17 @@ public class TWAgent1 extends TWAgent{
 //
 //        }
 //        displayMap(this.distances);
-        if( this.state!= State.GET_HOLE &&this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWHole && this.carriedTiles.size()>0){
-            TWThought think_btw= new TWThought(TWAction.PUTDOWN,TWDirection.Z);
-            think_btw.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
-            return think_btw;
-        }
-        if(this.state!= State.GET_TILE && this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWTile && this.carriedTiles.size()<3){
-            TWThought think_btw=new TWThought(TWAction.PICKUP,TWDirection.Z);
-            think_btw.setTile((TWTile) this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
-            return think_btw;
-        }
+
+//        if( this.state!= State.GET_HOLE &&this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWHole && this.carriedTiles.size()>0){
+//            TWThought think_btw= new TWThought(TWAction.PUTDOWN,TWDirection.Z);
+//            think_btw.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
+//            return think_btw;
+//        }
+//        if(this.state!= State.GET_TILE && this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWTile && this.carriedTiles.size()<3){
+//            TWThought think_btw=new TWThought(TWAction.PICKUP,TWDirection.Z);
+//            think_btw.setTile((TWTile) this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
+//            return think_btw;
+//        }
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought(lastThought);
