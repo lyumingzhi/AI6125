@@ -37,6 +37,7 @@ public class TWAgent1 extends TWAgent{
     protected int RightStep=0;
     protected int flag=0;
     //~~~~~~~~~~~naive~~~~~~
+    protected int senseRange=3;
     protected TWFuelStation fuelStation;
     private TWTile targetTile;
     private TWHole targetHole;
@@ -247,10 +248,12 @@ public class TWAgent1 extends TWAgent{
                     this.displayMap(this.distances);
                     System.out.println("there is error in calculating surrounding points\n");
                 }
-                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWTile){
+                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWTile
+                        && ((TWTile)(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]))).getTimeLeft(this.getMemory().schedule.getTime())>=this.distances[surroundpoint[0]][surroundpoint[1]] ){
                     ifFindTile=1;
                 }
-                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWHole){
+                if(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]) instanceof TWHole
+                        && ((TWHole)(this.memory.getMemoryGrid().get(surroundpoint[0],surroundpoint[1]))).getTimeLeft(this.getMemory().schedule.getTime())>=this.distances[surroundpoint[0]][surroundpoint[1]] ){
                     ifFindHole=1;
                 }
                 if(surroundpoint[0]==this.fuelx &&surroundpoint[1]==this.fuely){
@@ -333,7 +336,8 @@ public class TWAgent1 extends TWAgent{
 //        this.displayMap(this.distances);
         for(int i=0;i<this.MapSizeX;i++){
             for(int j=0; j<this.MapSizeY;j++){
-                if(this.distances[i][j]!=-1&&this.distances[i][j]<minDistance && Type.isInstance( this.memory.getMemoryGrid().get(i,j))){
+                if(this.distances[i][j]!=-1&&this.distances[i][j]<minDistance && Type.isInstance( this.memory.getMemoryGrid().get(i,j))
+                        && ((TWObject)(this.memory.getMemoryGrid().get(i,j))).getTimeLeft(this.getMemory().schedule.getTime())>=this.distances[i][j] ){
                     minDistance=this.distances[i][j];
                     minx=i;
                     miny=j;
@@ -423,6 +427,16 @@ public class TWAgent1 extends TWAgent{
 //
 //        }
 //        displayMap(this.distances);
+        if( this.state!= State.GET_HOLE &&this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWHole && this.carriedTiles.size()>0){
+            TWThought think_btw= new TWThought(TWAction.PUTDOWN,TWDirection.Z);
+            think_btw.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
+            return think_btw;
+        }
+        if(this.state!= State.GET_TILE && this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWTile && this.carriedTiles.size()<3){
+            TWThought think_btw=new TWThought(TWAction.PICKUP,TWDirection.Z);
+            think_btw.setTile((TWTile) this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
+            return think_btw;
+        }
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought(lastThought);
@@ -963,6 +977,7 @@ public class TWAgent1 extends TWAgent{
 //        if (this.targetHole == null) {
 //            this.targetHole = this.getMemory().getNearbyHole(this.getX(), this.getY(), 90);
             Object tempClosestItem=this.getClosest(TWHole.class);
+            Object tempClosestItem_second=this.getClosest(TWTile.class);
             if(tempClosestItem!=null){
                 this.targetHole= (TWHole) tempClosestItem;
             }
@@ -970,6 +985,17 @@ public class TWAgent1 extends TWAgent{
                 this.targetHole = null;
             }
 //        }
+        if ((tempClosestItem_second!=null)&& this.carriedTiles.size()<3){
+            if(this.targetHole!=null && this.distances[((TWTile)tempClosestItem_second).getX()][((TWTile)tempClosestItem_second).getY()]<
+                    this.distances[this.targetHole.getX()][this.targetHole.getY()]){
+                if(this.distances[((TWTile)tempClosestItem_second).getX()][((TWTile)tempClosestItem_second).getY()]<this.senseRange){
+                    return this.getTileThought(lastThought);
+                }
+            }
+            else if(this.targetHole==null){
+                return this.getTileThought(lastThought);
+            }
+        }
         if (this.targetHole == null) return this.getExploreThought(lastThought);
 
         TWDirection d = this.getOneStepDirection(this.targetHole.getX(), this.targetHole.getY());
@@ -987,6 +1013,7 @@ public class TWAgent1 extends TWAgent{
 //        if (this.targetTile == null) {
 //            this.targetTile = this.getMemory().getNearbyTile(this.getX(), this.getY(), 100);
             Object tempClosestItem=this.getClosest(TWTile.class);
+            Object tempClosestItem_second=this.getClosest(TWHole.class);
             if(tempClosestItem!=null){
                 this.targetTile= (TWTile) tempClosestItem;
 //                System.out.println("this tile have time: " +(this.targetTile.getTimeLeft(this.getMemory().schedule.getTime())+" the real location "+
@@ -997,6 +1024,17 @@ public class TWAgent1 extends TWAgent{
                 this.targetTile = null;
             }
 //        }
+        if ((tempClosestItem_second!=null)&& this.carriedTiles.size()>0){
+            if(this.targetTile!=null && this.distances[((TWHole)tempClosestItem_second).getX()][((TWHole)tempClosestItem_second).getY()]<
+                    this.distances[this.targetTile.getX()][this.targetTile.getY()]){
+                if(this.distances[((TWHole)tempClosestItem_second).getX()][((TWHole)tempClosestItem_second).getY()]<this.senseRange){
+                    return this.getHoleThought(lastThought);
+                }
+            }
+            else if(this.targetTile==null){
+                return this.getHoleThought(lastThought);
+            }
+        }
         if (this.targetTile == null) return this.getExploreThought(lastThought);
         TWDirection d = this.getOneStepDirection(this.targetTile.getX(), this.targetTile.getY());
         if (d == TWDirection.Z) {
