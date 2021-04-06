@@ -580,15 +580,34 @@ public class TWAgent1 extends TWAgent{
         } else if (temp instanceof TWHole && this.carriedTiles.size() > 0) {
             action = TWAction.PUTDOWN;
         }
-        if(fuelx!=-1||fuely!=-1){ flag = 0; }
+        if(this.state == State.GET_TILE || this.state == State.GET_HOLE || this.state == State.EXPLORE){ flag = 0;}
         if (flag == 0) { //向自己的领域移动
             if (y+Parameters.defaultSensorRange < this.initalPosition[0][0]) {
                 newDir = TWDirection.S;
             } else if (y-Parameters.defaultSensorRange > this.initalPosition[0][0]) {
                 newDir = TWDirection.N;
             } else {
-                if(x<=(int)Math.ceil(Parameters.xDimension/2)){newDir = TWDirection.E;}
-                else{newDir = TWDirection.E;}
+                if (lastThought.getDirection() == TWDirection.E) {
+                    if (t < 0.8) {
+                        newDir = TWDirection.E;
+                    } else {
+                        newDir = TWDirection.W;
+                    }
+                }
+                else if (lastThought.getDirection() == TWDirection.W) {
+                        if (t < 0.8) {
+                            newDir = TWDirection.W;
+                        } else {
+                            newDir = TWDirection.E;
+                        }
+                    }
+                else{
+                    if (t < 0.5) {
+                        newDir = TWDirection.W;
+                    } else {
+                        newDir = TWDirection.E;
+                    }
+                }
                 flag = 1;
             }
         } else if (flag == 1) { //遍历自己的领域
