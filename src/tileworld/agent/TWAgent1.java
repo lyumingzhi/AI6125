@@ -15,6 +15,8 @@ import static java.util.Arrays.asList;
 
 //import Collectio
 import tileworld.exceptions.CellBlockedException;
+import java.util.LinkedHashSet;
+
 
 //enum State {
 //    GET_FUEL,
@@ -371,6 +373,14 @@ public class TWAgent1 extends TWAgent{
             System.out.print("\n");
         }
     }
+
+    private static void removeDuplicate(List<TWAgent> list) {
+        LinkedHashSet<TWAgent> set = new LinkedHashSet<TWAgent>(list.size());
+        set.addAll(list);
+        list.clear();
+        list.addAll(set);
+    }
+
     protected TWThought think(TWThought lastThought){
 //        this.sensor.sense();
         //state 0: exploration
@@ -389,6 +399,7 @@ public class TWAgent1 extends TWAgent{
         this.getMemory().updateMemorWithCommunication(this.otherAgents);
         this.checkFuelStation();
         this.waterFlood(this.getX(),this.getY());
+        removeDuplicate(this.otherAgents);
         int NumAgents = this.otherAgents.size()+1;
         int avgInterval = (int) Math.ceil(Parameters.yDimension/ NumAgents);
         int rank = 0;
@@ -401,10 +412,10 @@ public class TWAgent1 extends TWAgent{
             }
         }
         this.initalPosition[0][0] = avgInterval*rank;
-        if(avgInterval*(rank+1)>Parameters.yDimension){
+        if(avgInterval*(rank+1)+NumAgents>Parameters.yDimension){
             this.initalPosition[0][1] = Parameters.yDimension;
         }else {
-            this.initalPosition[0][1] = avgInterval*(rank + 1)+1;
+            this.initalPosition[0][1] = avgInterval*(rank + 1)+NumAgents;
         }
         if(y>this.initalPosition[0][1]){
             int s = this.initalPosition[0][0];
@@ -580,31 +591,31 @@ public class TWAgent1 extends TWAgent{
         } else if (temp instanceof TWHole && this.carriedTiles.size() > 0) {
             action = TWAction.PUTDOWN;
         }
-        if(this.state == State.GET_TILE || this.state == State.GET_HOLE || this.state == State.EXPLORE){ flag = 0;}
+        if(this.fuelx!=-1 && (this.state == State.GET_TILE || this.state == State.GET_HOLE)) {
+            flag = 0;
+        }
         if (flag == 0) { //向自己的领域移动
             if (y+Parameters.defaultSensorRange < this.initalPosition[0][0]) {
                 newDir = TWDirection.S;
             } else if (y-Parameters.defaultSensorRange > this.initalPosition[0][0]) {
                 newDir = TWDirection.N;
-            } else {
+            } else if (y-Parameters.defaultSensorRange <= this.initalPosition[0][0] || y+Parameters.defaultSensorRange>=this.initalPosition[0][0]) {
                 if (lastThought.getDirection() == TWDirection.E) {
-                    if (t < 0.8) {
+                    if(x+Parameters.defaultSensorRange>=Parameters.xDimension - 1){
+                        newDir = TWDirection.W;
+                    }else {
                         newDir = TWDirection.E;
-                    } else {
+                    }
+                } else if (lastThought.getDirection() == TWDirection.W) {
+                    if(x-Parameters.defaultSensorRange<=0){
+                        newDir = TWDirection.E;
+                    }else {
                         newDir = TWDirection.W;
                     }
-                }
-                else if (lastThought.getDirection() == TWDirection.W) {
-                        if (t < 0.8) {
-                            newDir = TWDirection.W;
-                        } else {
-                            newDir = TWDirection.E;
-                        }
-                    }
-                else{
-                    if (t < 0.5) {
+                } else{
+                    if(x>(int) Math.ceil(Parameters.xDimension/2)){
                         newDir = TWDirection.W;
-                    } else {
+                    }else{
                         newDir = TWDirection.E;
                     }
                 }
@@ -650,7 +661,6 @@ public class TWAgent1 extends TWAgent{
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.S;
                         DStep++;
-
                     } else {
                         newDir = TWDirection.E;
                     }
@@ -676,8 +686,8 @@ public class TWAgent1 extends TWAgent{
                     }
                 }
             } else { //上一步是向上
-                if (UpStep == 6 || y - Parameters.defaultSensorRange <= startY) { //如果已经向下7步或者到达了最低
-                    if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
+                if (UpStep == 6 || y - Parameters.defaultSensorRange <= startY) { //如果已经向上7步或者到达了最顶
+                    if (x - Parameters.defaultSensorRange <= 0) {  //判断是否在左边界
                         newDir = TWDirection.E;
                     } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是否在右边界
                         newDir = TWDirection.W;
@@ -688,7 +698,7 @@ public class TWAgent1 extends TWAgent{
                 } else if (UStep == 1) {
                     newDir = TWDirection.W;
                     UStep = 0;
-                } else if (UpStep < 7) {  //向下不足7步，继续向下
+                } else if (UpStep < 7) {  //向下不足7步，继续向上
                     Object n = this.memory.getMemoryGrid().get(x, y - 1);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.E;
