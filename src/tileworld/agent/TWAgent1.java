@@ -50,7 +50,7 @@ public class TWAgent1 extends TWAgent{
     protected int distances[][];
     protected ArrayList<int[]> calculatedArea;
     protected ArrayList<int[]> toCalculateArea;
-    protected int checkRange=7;
+    protected int checkRange=20;
     protected int initalPosition[][] = new int[1][2];
     public TWAgent1(String name, int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env,fuelLevel);
@@ -269,7 +269,7 @@ public class TWAgent1 extends TWAgent{
             }
             floodRange+=1;
 //            System.out.println("if change: "+ifchange1+" iffindtile "+ifFindTile+" iffindhole "+ifFindHole+" iffindfuelstation "+ifFindFuelStation+" floodRange "+floodRange);
-            if(ifchange1!=1|| ((floodRange==this.checkRange || (ifFindTile==1 && ifFindHole==1 && ifFindFuelStation==1))) ){
+            if(ifchange1!=1|| ((floodRange==this.checkRange || (ifFindTile==1 && ifFindHole==1 ))) ){
                 break;
             }
         }
