@@ -997,7 +997,22 @@ public class TWAgent1 extends TWAgent{
                 return this.getTileThought(lastThought);
             }
         }
-        if (this.targetHole == null) return this.getExploreThought(lastThought);
+        // if (this.targetHole == null) return this.getExploreThought(lastThought);
+        if (this.targetHole == null) {
+            return this.getExploreThought();
+        } else {
+            for (int i = 0; i < this.otherAgents.size(); i++) {
+                TWHole otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetHole();
+                if (otherHole != null) {
+                    if (this.targetHole.getX() == otherHole.getX() &&
+                            this.targetHole.getY() == otherHole.getY()) {
+                        this.targetHole = null;
+                        return this.getExploreThought();
+                    }
+
+                }
+            }
+        }
 
         TWDirection d = this.getOneStepDirection(this.targetHole.getX(), this.targetHole.getY());
         if (d == TWDirection.Z) {
@@ -1036,7 +1051,23 @@ public class TWAgent1 extends TWAgent{
                 return this.getHoleThought(lastThought);
             }
         }
-        if (this.targetTile == null) return this.getExploreThought(lastThought);
+        // if (this.targetTile == null) return this.getExploreThought(lastThought);
+
+        if (this.targetTile == null) {
+            return this.getExploreThought();
+        } else {
+            for (int i = 0; i < this.otherAgents.size(); i++) {
+                TWTile otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetTile();
+                if (otherHole != null) {
+                    if (this.targetTile.getX() == otherHole.getX() &&
+                            this.targetTile.getY() == otherHole.getY()) {
+                        this.targetTile = null;
+                        return this.getExploreThought();
+                    }
+                }
+            }
+        }
+
         TWDirection d = this.getOneStepDirection(this.targetTile.getX(), this.targetTile.getY());
         if (d == TWDirection.Z) {
             if(!(this.getMemory().getMemoryGrid().get(this.getX(),this.getY()) instanceof TWTile))
@@ -1070,5 +1101,13 @@ public class TWAgent1 extends TWAgent{
 
         return randomDir;
 
+    }
+
+    public TWTile getTargetTile() {
+        return this.targetTile;
+    }
+
+    public TWHole getTargetHole() {
+        return  this.targetHole;
     }
 }
