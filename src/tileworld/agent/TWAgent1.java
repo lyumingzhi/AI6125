@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Arrays;
+import java.util.Random;
 
 //import Collectio
 import tileworld.exceptions.CellBlockedException;
@@ -29,10 +30,12 @@ public class TWAgent1 extends TWAgent{
     protected int MapSizeX;
     protected int MapSizeY;
     protected int DownStep=0;
-    protected int DStep =0;
+    protected int DStep=0;
     protected int UpStep=0;
+    protected int UStep=0;
     protected int LeftStep=0;
     protected int RightStep=0;
+    protected int flag=0;
     //~~~~~~~~~~~naive~~~~~~
     protected TWFuelStation fuelStation;
     private TWTile targetTile;
@@ -52,6 +55,7 @@ public class TWAgent1 extends TWAgent{
     protected ArrayList<int[]> toCalculateArea;
     protected int checkRange=20;
     protected int initalPosition[][] = new int[1][2];
+//    protected int initalPosition[][] = new int[1][4];
     public TWAgent1(String name, int xpos, int ypos, TWEnvironment env, double fuelLevel) {
         super(xpos, ypos, env,fuelLevel);
         fuelTolerance=0.9;
@@ -380,22 +384,41 @@ public class TWAgent1 extends TWAgent{
         this.getMemory().updateMemorWithCommunication(this.otherAgents);
         this.checkFuelStation();
         this.waterFlood(this.getX(),this.getY());
-        if(this.initalPosition[0][0] == 0 && this.initalPosition[0][1] == 0){
-            this.initalPosition[0][0] = x;
-            this.initalPosition[0][1] = y;
-            for(TWAgent otheragent : this.otherAgents){
-                if(otheragent.getY() >= this.initalPosition[0][1]){
-                    this.initalPosition[0][0] = otheragent.getX();
-                    this.initalPosition[0][1] = otheragent.getY();
-//                    System.out.println('1');
-                }
-            }
-            if(this.initalPosition[0][0] == x && this.initalPosition[0][1] == y){
-                this.initalPosition[0][0] = Parameters.xDimension;
-                this.initalPosition[0][1] = Parameters.yDimension;
-//                this.initalPosition.add(new int[]{Parameters.xDimension, Parameters.yDimension});
+        int NumAgents = this.otherAgents.size()+1;
+        int avgInterval = (int) Math.ceil(Parameters.yDimension/ NumAgents);
+        int rank = 0;
+        for(TWAgent otheragent : this.otherAgents){
+            if(otheragent.getY()<y){ rank++; }
+            else if(otheragent.getY() == y){
+                if(otheragent.getX()<x){ rank++; }
             }
         }
+        this.initalPosition[0][0] = avgInterval*rank;
+        if(avgInterval*(rank+1)>Parameters.yDimension){
+            this.initalPosition[0][1] = Parameters.yDimension;
+        }else {
+            this.initalPosition[0][1] = avgInterval*(rank + 1)+1;
+        }
+        if(y>this.initalPosition[0][1]){
+            int s = this.initalPosition[0][0];
+            this.initalPosition[0][0] = this.initalPosition[0][1];
+            this.initalPosition[0][1] = s;
+        }
+
+//        if(this.initalPosition[0][0] == 0 && this.initalPosition[0][1] == 0){
+//            this.initalPosition[0][0] = x;
+//            this.initalPosition[0][1] = y;
+//            for(TWAgent otheragent : this.otherAgents){
+//                if(otheragent.getY() >= this.initalPosition[0][1]){
+//                    this.initalPosition[0][0] = otheragent.getX();
+//                    this.initalPosition[0][1] = otheragent.getY();
+//                }
+//            }
+//            if(this.initalPosition[0][0] == x && this.initalPosition[0][1] == y){
+//                this.initalPosition[0][0] = Parameters.xDimension;
+//                this.initalPosition[0][1] = Parameters.yDimension;
+//            }
+//        }
 //        for(TWAgent otheragent:this.otherAgents){
 //
 //        }
@@ -543,144 +566,254 @@ public class TWAgent1 extends TWAgent{
     }
 
 
+//    private TWThought getExploreThought(TWThought lastThought) {
+//        TWDirection newDir = TWDirection.E;
+//        int stopX = initalPosition[0][0];
+//        int stopY = initalPosition[0][1];
+//        double t = Math.random();
+//        double time = this.getMemory().schedule.getTime();
+//        Object temp = this.memory.getMemoryGrid().get(x, y);
+//        TWAction action = TWAction.MOVE;
+//        if(temp instanceof TWTile && this.carriedTiles.size()<3){
+////            if(this.getEnvironment().canPickupTile((TWTile) temp, this)) {
+////                action = TWAction.PICKUP;
+////            }
+//            action = TWAction.PICKUP;
+//        } else if(temp instanceof TWHole && this.carriedTiles.size()>0) {
+//            action = TWAction.PUTDOWN;
+//        }
+//        if (t < 0.00) {
+//            newDir = getRandomDirection();
+//        } else {
+//            if (lastThought.getDirection() == TWDirection.S) {// 上一步是向下
+//                if (y + Parameters.defaultSensorRange >= stopY) {
+//                    newDir = TWDirection.N;
+//                    DownStep = 0;
+//                } else if (DownStep == 7 || y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //如果已经向下7步或者到达了最低
+//                    if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
+//                        newDir = TWDirection.E;
+//                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是否在右边界
+//                        newDir = TWDirection.W;
+//                    }
+//                    DownStep = 0;
+//                } else if (DStep == 1) {
+//                    newDir = TWDirection.E;
+//                    DStep = 0;
+//                } else if (DownStep < 7) {  //向下不足7步，继续向下
+//                    Object n = this.memory.getMemoryGrid().get(x, y + 1);
+//                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+//                        newDir = TWDirection.W;
+//                        LeftStep++;
+////                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
+////                        action = TWAction.PICKUP;
+////                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
+////                        action = TWAction.PUTDOWN;
+//                    } else {
+//                        newDir = TWDirection.S;
+//                        DownStep++;
+//                    }
+//                }
+//
+//            } else if (lastThought.getDirection() == TWDirection.E) { //上一步是向右
+//                if (y + Parameters.defaultSensorRange >= stopY) {
+//                    newDir = TWDirection.N;
+//                    RightStep = 0;
+//                } else if (RightStep == 1) {
+//                    newDir = TWDirection.N;
+//                    RightStep = 0;
+//                } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
+//                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
+//                        newDir = TWDirection.N;
+//                    } else {
+//                        newDir = TWDirection.S;
+//                        DownStep++;
+//                    }
+//                } else { //没到右边界，继续向右
+//                    Object n = this.memory.getMemoryGrid().get(x+1, y);
+//                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+//                        newDir = TWDirection.S;
+//                        DStep++;
+//
+//                    } else {
+//                        newDir = TWDirection.E;
+//                    }
+//                }
+//            } else if (lastThought.getDirection() == TWDirection.W) { //上一步是向左
+//                if (y + Parameters.defaultSensorRange >= stopY) {
+//                    newDir = TWDirection.N;
+//                } else if (LeftStep == 1) {
+//                    newDir = TWDirection.S;
+//                    LeftStep = 0;
+//                } else if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
+//                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
+//                        newDir = TWDirection.N;
+//                    } else {
+//                        newDir = TWDirection.S;
+//                        DownStep++;
+//                    }
+//                } else { //没左到边界，继续向左
+//                    Object n = this.memory.getMemoryGrid().get(x-1, y);
+//                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+//                        newDir = TWDirection.N;
+//                        UpStep++;
+//                    } else {
+//                        newDir = TWDirection.W;
+//                    }
+//                }
+//            } else { //上一步是向上
+//                if (y - Parameters.defaultSensorRange <= 0) { //判断是否到了上边界
+//                    if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
+//                        newDir = TWDirection.E;
+//                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
+//                        newDir = TWDirection.W;
+//                    } else {
+//                        newDir = TWDirection.W;
+//                    }
+//                } else if (UpStep == 1) {
+//                    newDir = TWDirection.W;
+//                    UpStep = 0;
+//                } else {
+//                    Object n = this.memory.getMemoryGrid().get(x, y-1);
+//                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+//                        newDir = TWDirection.E;
+//                        RightStep++;
+//                    } else {
+//                        newDir = TWDirection.N;
+//                    }
+//                }
+//            }
+//        }
+//        TWThought tt = new TWThought(action, newDir);
+//        if(action==TWAction.PICKUP){
+//            tt.setTile((TWTile) temp);
+//        } else if (action==TWAction.PUTDOWN){
+//            tt.setHole((TWHole) temp);
+//        }
+//        return tt;
+//    }
+
+
     private TWThought getExploreThought(TWThought lastThought) {
         TWDirection newDir = TWDirection.E;
-        int stopX = initalPosition[0][0];
+        int startY = initalPosition[0][0];
         int stopY = initalPosition[0][1];
         double t = Math.random();
         double time = this.getMemory().schedule.getTime();
         Object temp = this.memory.getMemoryGrid().get(x, y);
         TWAction action = TWAction.MOVE;
-        if(temp instanceof TWTile && this.carriedTiles.size()<3){
-//            if(this.getEnvironment().canPickupTile((TWTile) temp, this)) {
-//                action = TWAction.PICKUP;
-//            }
+        if (temp instanceof TWTile && this.carriedTiles.size() < 3) {
             action = TWAction.PICKUP;
-        } else if(temp instanceof TWHole && this.carriedTiles.size()>0) {
+        } else if (temp instanceof TWHole && this.carriedTiles.size() > 0) {
             action = TWAction.PUTDOWN;
         }
-        if (t < 0.00) {
-            newDir = getRandomDirection();
-        } else {
-            if (lastThought.getDirection() == TWDirection.S) {// 上一步是向下
-                if (y + Parameters.defaultSensorRange >= stopY) {
-                    newDir = TWDirection.N;
-                    DownStep = 0;
-                } else if (DownStep == 7 || y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //如果已经向下7步或者到达了最低
+        if (flag == 0) { //向自己的领域移动
+            if (y+Parameters.defaultSensorRange < this.initalPosition[0][0]) {
+                newDir = TWDirection.S;
+            } else if (y-Parameters.defaultSensorRange > this.initalPosition[0][0]) {
+                newDir = TWDirection.N;
+            } else {
+                if(t<0.5){newDir = TWDirection.W;}
+                else{newDir = TWDirection.E;}
+                flag = 1;
+            }
+        } else if (flag == 1) { //遍历自己的领域
+            if (lastThought.getDirection() == TWDirection.S) { // 上一步是向下
+                if (DownStep == 6 || y + Parameters.defaultSensorRange >= stopY) { //如果已经向下7步或者到达了最低
                     if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
                         newDir = TWDirection.E;
-                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是否在右边界
+                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是否在右边界
                         newDir = TWDirection.W;
+                    } else {
+                        newDir = TWDirection.E;
                     }
                     DownStep = 0;
                 } else if (DStep == 1) {
                     newDir = TWDirection.E;
                     DStep = 0;
-                } else if (DownStep < 7) {  //向下不足7步，继续向下
+                } else if (DownStep < 6) {  //向下不足7步，继续向下
                     Object n = this.memory.getMemoryGrid().get(x, y + 1);
-                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.W;
                         LeftStep++;
-//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
-//                        action = TWAction.PICKUP;
-//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
-//                        action = TWAction.PUTDOWN;
                     } else {
                         newDir = TWDirection.S;
                         DownStep++;
                     }
                 }
-
             } else if (lastThought.getDirection() == TWDirection.E) { //上一步是向右
-                if (y + Parameters.defaultSensorRange >= stopY) {
+                if (RightStep == 1) {
                     newDir = TWDirection.N;
                     RightStep = 0;
-                } else if (RightStep == 1) {
-                    newDir = TWDirection.N;
-                    RightStep = 0;
-                } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
-                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
-//                    TWDirection newDir = getRandomDirection();
+                } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是到右边界
+                    if (y + Parameters.defaultSensorRange >= stopY) { //判断是到下边界
                         newDir = TWDirection.N;
                     } else {
                         newDir = TWDirection.S;
                         DownStep++;
                     }
                 } else { //没到右边界，继续向右
-                    Object n = this.memory.getMemoryGrid().get(x+1, y);
-                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                    Object n = this.memory.getMemoryGrid().get(x + 1, y);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.S;
                         DStep++;
-//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
-//                        action = TWAction.PICKUP;
-//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
-//                        action = TWAction.PUTDOWN;
+
                     } else {
                         newDir = TWDirection.E;
                     }
                 }
             } else if (lastThought.getDirection() == TWDirection.W) { //上一步是向左
-                if (y + Parameters.defaultSensorRange >= stopY) {
-                    newDir = TWDirection.N;
-                } else if (LeftStep == 1) {
+                if (LeftStep == 1) {
                     newDir = TWDirection.S;
                     LeftStep = 0;
                 } else if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
-                    if (y + Parameters.defaultSensorRange >= Parameters.yDimension-1) { //判断是到下边界
+                    if (y + Parameters.defaultSensorRange >= stopY) { //判断是到下边界
                         newDir = TWDirection.N;
                     } else {
                         newDir = TWDirection.S;
                         DownStep++;
                     }
                 } else { //没左到边界，继续向左
-                    Object n = this.memory.getMemoryGrid().get(x-1, y);
-                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                    Object n = this.memory.getMemoryGrid().get(x - 1, y);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.N;
-                        UpStep++;
-//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
-//                        action = TWAction.PICKUP;
-//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
-//                        action = TWAction.PUTDOWN;
+                        UStep++;
                     } else {
                         newDir = TWDirection.W;
                     }
                 }
             } else { //上一步是向上
-                if (y - Parameters.defaultSensorRange <= 0) { //判断是否到了上边界
-                    if (x - Parameters.defaultSensorRange <= 0) { //判断是到左边界
+                if (UpStep == 6 || y - Parameters.defaultSensorRange <= startY) { //如果已经向下7步或者到达了最低
+                    if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
                         newDir = TWDirection.E;
-                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension-1) { //判断是到右边界
+                    } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是否在右边界
                         newDir = TWDirection.W;
                     } else {
                         newDir = TWDirection.W;
                     }
-                } else if (UpStep == 1) {
-                    newDir = TWDirection.W;
                     UpStep = 0;
-                } else {
-                    Object n = this.memory.getMemoryGrid().get(x, y-1);
-                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time)>3) {
+                } else if (UStep == 1) {
+                    newDir = TWDirection.W;
+                    UStep = 0;
+                } else if (UpStep < 7) {  //向下不足7步，继续向下
+                    Object n = this.memory.getMemoryGrid().get(x, y - 1);
+                    if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.E;
                         RightStep++;
-//                    } else if(n instanceof TWTile && this.carriedTiles.size()<3){
-//                        action = TWAction.PICKUP;
-//                    } else if(n instanceof TWHole && this.carriedTiles.size()>0) {
-//                        action = TWAction.PUTDOWN;
                     } else {
                         newDir = TWDirection.N;
+                        UpStep++;
                     }
                 }
             }
         }
         TWThought tt = new TWThought(action, newDir);
-        if(action==TWAction.PICKUP){
+        if (action == TWAction.PICKUP) {
             tt.setTile((TWTile) temp);
-        } else if (action==TWAction.PUTDOWN){
+        } else if (action == TWAction.PUTDOWN) {
             tt.setHole((TWHole) temp);
         }
         return tt;
     }
-
 
 
 //    private TWThought getExploreThought() {
