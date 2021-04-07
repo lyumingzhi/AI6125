@@ -80,7 +80,7 @@ public class TWAgent1 extends TWAgent{
     protected void initialAstar(int x, int y, int target_x, int target_y){
         this.openset=new ArrayList<int []>();
         this.closeset=new ArrayList<int []>();
-        this.openset.add(new int[] {this.getX(),this.getY()});
+        this.openset.add(new int[] {x,y});
         this.g_score= new int[this.MapSizeX][this.MapSizeY];;
         this.h_score=new int[this.MapSizeX][this.MapSizeY];;
         this.f_score=new int[this.MapSizeX][this.MapSizeY];;
@@ -96,6 +96,10 @@ public class TWAgent1 extends TWAgent{
     }
 
     protected ArrayList<int []> Astar(int x, int y, int target_x,int target_y){
+        if(this.memory.getMemoryGrid().get(target_x,target_y) instanceof TWObstacle){
+            System.out.println("this istr an obstacle under target at "+target_x+" "+target_y);
+        }
+        System.out.println("the target is "+target_x+" "+target_y+" "+x+ " "+y);
         initialAstar(x,y,target_x,target_y);
         ArrayList<int[]> result_route=new ArrayList<int []>();
         int count=0;
@@ -103,6 +107,7 @@ public class TWAgent1 extends TWAgent{
             count+=1;
 //            System.out.println(count+" i am here,"+ this.openset.size());
             int candidate_index =get_min(this.openset,this.f_score);
+//            System.out.println("index of min "+candidate_index);
             int []candidate=this.openset.get(candidate_index);
             if(candidate[0]==target_x && candidate[1]==target_y){
                 int node[]={target_x,target_y};
@@ -119,7 +124,7 @@ public class TWAgent1 extends TWAgent{
 //                        }
 //                    }
 //                }
-//                System.out.println("the distance to FuelStation is "+result_route.size()+" "+result_route.get(0)[0]+" "+result_route.get(0)[1]);
+                System.out.println("the distance to destination is "+result_route.size()+" "+result_route.get(0)[0]+" "+result_route.get(0)[1]);
                 return result_route;
             }
             this.openset.remove(candidate_index);
@@ -155,12 +160,18 @@ public class TWAgent1 extends TWAgent{
                                 this.h_score[tempindex[0]][tempindex[1]]=Math.abs(tempindex[0]-target_x)+Math.abs(tempindex[1]-target_y);
                                 this.f_score[tempindex[0]][tempindex[1]]=g_score[tempindex[0]][tempindex[1]]+h_score[tempindex[0]][tempindex[1]];
                                 this.openset.add(new int[] {tempindex[0],tempindex[1]});
+                                if(this.f_score[tempindex[0]][tempindex[1]]>=100){
+                                    System.out.println(tempindex[0]+" "+tempindex[1]+" candiddate "+candidate[0]+" "+candidate[1]+" fscore "+this.f_score[candidate[0]][candidate[1]]+" g_score "+this.g_score[candidate[0]][candidate[1]]+" h score "+this.h_score[candidate[0]][candidate[1]]);
+
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        System.out.println("the distance to destination is "+result_route.size()+" "+result_route.get(0)[0]+" "+result_route.get(0)[1]);
+
         return result_route;
     }
 
@@ -306,12 +317,17 @@ public class TWAgent1 extends TWAgent{
         return resultRoute;
     }
     public int get_min(ArrayList<int[]> array,int[][] scores){
-        int min=MapSizeX+MapSizeY+1;
+        int min=this.MapSizeX+this.MapSizeY+1;
         int minindex=-1;
         for(int index=0;index<array.size();index++ ){
             if(scores[array.get(index)[0]][array.get(index)[1]]<min){
                 min=scores[array.get(index)[0]][array.get(index)[1]];
                 minindex=index;
+            }
+        }
+        if(minindex==-1){
+            for(int index=0;index<array.size();index++ ){
+                System.out.println("in the list they are "+scores[array.get(index)[0]][array.get(index)[1]]);
             }
         }
         return minindex;
