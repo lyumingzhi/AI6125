@@ -630,6 +630,9 @@ public class TWAgent1 extends TWAgent{
             if(y+Parameters.defaultSensorRange < this.initalPosition[0][0]){
                 int t_y = this.initalPosition[0][0]-Parameters.defaultSensorRange;
                 int t_x = x;
+                if(this.initalPosition[0][0] == 0){
+                    t_x = 2;
+                }
                 Object n = this.memory.getMemoryGrid().get(t_x, t_y);
                 while (n instanceof TWObstacle) {
                     if (t_x+1>=Parameters.xDimension){
@@ -645,6 +648,9 @@ public class TWAgent1 extends TWAgent{
             }else if(y-Parameters.defaultSensorRange > this.initalPosition[0][0]){
                 int t_y = this.initalPosition[0][0];
                 int t_x = x;
+                if(this.initalPosition[0][0] == 0){
+                    t_x = 2;
+                }
                 Object n = this.memory.getMemoryGrid().get(t_x, t_y);
                 while (n instanceof TWObstacle) {
                     if (t_x+1>=Parameters.xDimension){
@@ -662,13 +668,23 @@ public class TWAgent1 extends TWAgent{
                 if (lastThought.getDirection() == TWDirection.E) {
                     if(x+Parameters.defaultSensorRange>=Parameters.xDimension - 1){
                         newDir = TWDirection.W;
-                    }else {
+                    }
+                    else if(this.memory.getMemoryGrid().get(x+1, y) instanceof TWObstacle){
+                        newDir = TWDirection.S;
+                        DStep=1;
+                    }
+                    else {
                         newDir = TWDirection.E;
                     }
                 } else if (lastThought.getDirection() == TWDirection.W) {
                     if(x-Parameters.defaultSensorRange<=0){
                         newDir = TWDirection.E;
-                    }else {
+                    }
+                    else if(this.memory.getMemoryGrid().get(x-1, y) instanceof TWObstacle){
+                        newDir = TWDirection.N;
+                        DStep=2;
+                    }
+                    else {
                         newDir = TWDirection.W;
                     }
                 } else{
@@ -719,7 +735,7 @@ public class TWAgent1 extends TWAgent{
 //        }
         else if (flag == 1) { //遍历自己的领域
             if (lastThought.getDirection() == TWDirection.S) { // 上一步是向下
-                if (DownStep == 6 || y + Parameters.defaultSensorRange >= stopY) { //如果已经向下7步或者到达了最低
+                if (DownStep == 2*Parameters.defaultSensorRange-1 || y + Parameters.defaultSensorRange >= stopY) { //如果已经向下7步或者到达了最低
                     if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
                         newDir = TWDirection.E;
                     } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是否在右边界
@@ -734,7 +750,7 @@ public class TWAgent1 extends TWAgent{
                 } else if (DStep == 2) {
                     newDir = TWDirection.W;
                     DStep = 0;
-                } else if (DownStep < 6) {  //向下不足7步，继续向下
+                } else if (DownStep < 2*Parameters.defaultSensorRange-1) {  //向下不足7步，继续向下
                     Object n = this.memory.getMemoryGrid().get(x, y + 1);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
                         newDir = TWDirection.W;
@@ -788,7 +804,7 @@ public class TWAgent1 extends TWAgent{
                     }
                 }
             } else { //上一步是向上
-                if (UpStep == 6 || y - Parameters.defaultSensorRange <= startY) { //如果已经向上7步或者到达了最顶
+                if (UpStep == 2*Parameters.defaultSensorRange-1 || y - Parameters.defaultSensorRange <= startY) { //如果已经向上7步或者到达了最顶
                     if (x - Parameters.defaultSensorRange <= 0) {  //判断是否在左边界
                         newDir = TWDirection.E;
                     } else if (x + Parameters.defaultSensorRange >= Parameters.xDimension - 1) { //判断是否在右边界
@@ -800,7 +816,7 @@ public class TWAgent1 extends TWAgent{
                 } else if (UStep == 1) {
                     newDir = TWDirection.W;
                     UStep = 0;
-                } else if (UpStep < 7) {  //向下不足7步，继续向上
+                } else if (UpStep < 2*Parameters.defaultSensorRange-1) {  //向下不足7步，继续向上
                     Object n = this.memory.getMemoryGrid().get(x, y - 1);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
                         newDir = TWDirection.E;
