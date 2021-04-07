@@ -111,7 +111,6 @@ public class TWAgent1 extends TWAgent{
 //                    result_route.add(0,Arrays.copyOf(node,2));
                     result_route.add(0,node);
                     node=this.came_from[node[0]][node[1]];
-
                 }
 //                for(int i=-1;i<2;i++) {
 //                    for (int j = -1; j < 2; j++) {
@@ -611,20 +610,13 @@ public class TWAgent1 extends TWAgent{
         if(this.fuelx!=-1 && (this.state == State.GET_TILE || this.state == State.GET_HOLE)) {
             flag = 0;
         }
-        if (flag == 0) { //向自己的领域移动
-            if (y+Parameters.defaultSensorRange < this.initalPosition[0][0]) {
-                newDir = TWDirection.S;
-                Object n = this.memory.getMemoryGrid().get(x, y + 1);
-                if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
-                    newDir = TWDirection.W;
-                }
-            } else if (y-Parameters.defaultSensorRange > this.initalPosition[0][0]) {
-                newDir = TWDirection.N;
-                Object n = this.memory.getMemoryGrid().get(x, y - 1);
-                if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
-                    newDir = TWDirection.E;
-                }
-            } else if (y-Parameters.defaultSensorRange <= this.initalPosition[0][0] || y+Parameters.defaultSensorRange>=this.initalPosition[0][0]) {
+        if(flag==0){
+            if(y+Parameters.defaultSensorRange < this.initalPosition[0][0]){
+                newDir = this.getOneStepDirectionToInitalStation(x, y, x, this.initalPosition[0][0]-Parameters.defaultSensorRange);
+            }else if(y-Parameters.defaultSensorRange > this.initalPosition[0][0]){
+                newDir = this.getOneStepDirectionToInitalStation(x, y, x, this.initalPosition[0][0]+Parameters.defaultSensorRange);
+            }
+            else{
                 if (lastThought.getDirection() == TWDirection.E) {
                     if(x+Parameters.defaultSensorRange>=Parameters.xDimension - 1){
                         newDir = TWDirection.W;
@@ -646,7 +638,44 @@ public class TWAgent1 extends TWAgent{
                 }
                 flag = 1;
             }
-        } else if (flag == 1) { //遍历自己的领域
+        }
+//        if (flag == 0) { //向自己的领域移动
+//            if (y+Parameters.defaultSensorRange < this.initalPosition[0][0]) {
+//                newDir = TWDirection.S;
+//                Object n = this.memory.getMemoryGrid().get(x, y + 1);
+//                if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
+//                    newDir = TWDirection.W;
+//                }
+//            } else if (y-Parameters.defaultSensorRange > this.initalPosition[0][0]) {
+//                newDir = TWDirection.N;
+//                Object n = this.memory.getMemoryGrid().get(x, y - 1);
+//                if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 2) {
+//                    newDir = TWDirection.E;
+//                }
+//            } else if (y-Parameters.defaultSensorRange <= this.initalPosition[0][0] || y+Parameters.defaultSensorRange>=this.initalPosition[0][0]) {
+//                if (lastThought.getDirection() == TWDirection.E) {
+//                    if(x+Parameters.defaultSensorRange>=Parameters.xDimension - 1){
+//                        newDir = TWDirection.W;
+//                    }else {
+//                        newDir = TWDirection.E;
+//                    }
+//                } else if (lastThought.getDirection() == TWDirection.W) {
+//                    if(x-Parameters.defaultSensorRange<=0){
+//                        newDir = TWDirection.E;
+//                    }else {
+//                        newDir = TWDirection.W;
+//                    }
+//                } else{
+//                    if(x>(int) Math.ceil(Parameters.xDimension/2)){
+//                        newDir = TWDirection.W;
+//                    }else{
+//                        newDir = TWDirection.E;
+//                    }
+//                }
+//                flag = 1;
+//            }
+//        }
+        else if (flag == 1) { //遍历自己的领域
             if (lastThought.getDirection() == TWDirection.S) { // 上一步是向下
                 if (DownStep == 6 || y + Parameters.defaultSensorRange >= stopY) { //如果已经向下7步或者到达了最低
                     if (x - Parameters.defaultSensorRange <= 0) {  //判断是都在左边界
@@ -750,6 +779,30 @@ public class TWAgent1 extends TWAgent{
         }
         return tt;
     }
+
+
+    private TWDirection getOneStepDirectionToInitalStation(int s_x, int s_y, int t_x, int t_y){
+        this.initialAstar(s_x,s_y,t_x,t_y);
+        ArrayList<int[]> path=this.Astar(s_x,s_y,t_x,t_y);
+        int[] nextStep=path.get(0);
+        assert ((nextStep[0]-s_x)*(nextStep[1]-s_y)==0);
+        int x=nextStep[0];
+        int y=nextStep[1];
+        if (x > s_x) {
+            return TWDirection.E;
+        } else if (x < s_x) {
+            return TWDirection.W;
+        } else { // x found
+            if (y > s_y) {
+                return TWDirection.S;
+            } else if (y < s_y) {
+                return TWDirection.N;
+            } else {
+                return TWDirection.Z;
+            }
+        }
+    }
+
 
 
     private List<TWDirection> getGroupMaxExploreDirection(int curX, int curY, int agentX, int agentY, List<TWDirection> directions){
