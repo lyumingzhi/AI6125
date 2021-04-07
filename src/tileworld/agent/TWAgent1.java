@@ -628,9 +628,35 @@ public class TWAgent1 extends TWAgent{
         }
         if(flag==0){
             if(y+Parameters.defaultSensorRange < this.initalPosition[0][0]){
-                newDir = this.getOneStepDirectionToInitalStation(x, y, x, this.initalPosition[0][0]-Parameters.defaultSensorRange);
+                int t_y = this.initalPosition[0][0]-Parameters.defaultSensorRange;
+                int t_x = x;
+                Object n = this.memory.getMemoryGrid().get(t_x, t_y);
+                while (n instanceof TWObstacle) {
+                    if (t_x+1>=Parameters.xDimension){
+                        t_x--;
+                    } else if(t_x-1<=0){
+                        t_x++;
+                    }else{
+                        t_x++;
+                    }
+                    n = this.memory.getMemoryGrid().get(t_x, t_y);
+                }
+                newDir = this.getOneStepDirectionToInitalStation(x, y, t_x, t_y);
             }else if(y-Parameters.defaultSensorRange > this.initalPosition[0][0]){
-                newDir = this.getOneStepDirectionToInitalStation(x, y, x, this.initalPosition[0][0]+Parameters.defaultSensorRange);
+                int t_y = this.initalPosition[0][0];
+                int t_x = x;
+                Object n = this.memory.getMemoryGrid().get(t_x, t_y);
+                while (n instanceof TWObstacle) {
+                    if (t_x+1>=Parameters.xDimension){
+                        t_x--;
+                    } else if(t_x-1<=0){
+                        t_x++;
+                    }else{
+                        t_x++;
+                    }
+                    n = this.memory.getMemoryGrid().get(t_x, t_y);
+                }
+                newDir = this.getOneStepDirectionToInitalStation(x, y, t_x, t_y);
             }
             else{
                 if (lastThought.getDirection() == TWDirection.E) {
