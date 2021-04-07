@@ -417,45 +417,63 @@ public class TWAgent1 extends TWAgent{
         }else {
             this.initalPosition[0][1] = avgInterval*(rank + 1)+NumAgents;
         }
-        if(y>this.initalPosition[0][1]){
-            int s = this.initalPosition[0][0];
-            this.initalPosition[0][0] = this.initalPosition[0][1];
-            this.initalPosition[0][1] = s;
-        }
+//        if(y>this.initalPosition[0][1] ){
+//            int s = this.initalPosition[0][0];
+//            this.initalPosition[0][0] = this.initalPosition[0][1];
+//            this.initalPosition[0][1] = s;
+//        }else if (y > this.initalPosition[0][0] && y < this.initalPosition[0][1] && (this.initalPosition[0][1] - y) < (y - this.initalPosition[0][0])){
+//            int s = this.initalPosition[0][0];
+//            this.initalPosition[0][0] = this.initalPosition[0][1];
+//            this.initalPosition[0][1] = s;
+//        }
 
 //        displayMap(this.distances);
         if( this.state!= State.GET_HOLE &&this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWHole && this.carriedTiles.size()>0){
-            TWThought think_btw= new TWThought(TWAction.PUTDOWN,TWDirection.Z);
+            TWThought think_btw= new TWThought(TWAction.PUTDOWN,lastThought.getDirection());
             think_btw.setHole((TWHole)this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
             return think_btw;
         }
         if(this.state!= State.GET_TILE && this.getMemory().getMemoryGrid().get(this.getX(),this.getY())instanceof TWTile && this.carriedTiles.size()<3){
-            TWThought think_btw=new TWThought(TWAction.PICKUP,TWDirection.Z);
+            TWThought think_btw=new TWThought(TWAction.PICKUP,lastThought.getDirection());
             think_btw.setTile((TWTile) this.getMemory().getMemoryGrid().get(this.getX(),this.getY()));
             return think_btw;
         }
         switch (this.state) {
             case EXPLORE:
                 thought = this.getExploreThought(lastThought);
-                this.state = State.GET_TILE;
+                if(this.fuelx == -1){
+                    this.state = State.EXPLORE;
+                }
+                else {
+                    this.state = State.GET_TILE;
+                }
                 break;
             case GET_FUEL:
                 thought = this.getFuelThought(lastThought);
                 if (thought.getAction() == TWAction.REFUEL) {
                     this.state = State.GET_TILE;
                 }
+//                else if(this.fuelx == -1){
+//                    this.state = State.EXPLORE;
+//                }
                 break;
             case GET_HOLE:
                 thought = this.getHoleThought(lastThought);
                 if (thought.getAction() == TWAction.PUTDOWN) {
                     this.state = State.GET_TILE;
                 }
+//                else if(this.fuelx == -1){
+//                this.state = State.EXPLORE;
+//                }
                 break;
             case GET_TILE:
                 thought = this.getTileThought(lastThought);
                 if (thought.getAction() == TWAction.PICKUP) {
                     this.state = State.GET_HOLE;
                 }
+//                else if(this.fuelx == -1){
+//                    this.state = State.EXPLORE;
+//                }
                 break;
             default:
                 thought = this.getExploreThought(lastThought);
@@ -577,9 +595,8 @@ public class TWAgent1 extends TWAgent{
     }
 
 
-
     private TWThought getExploreThought(TWThought lastThought) {
-        TWDirection newDir = TWDirection.E;
+        TWDirection newDir = lastThought.getDirection();
         int startY = initalPosition[0][0];
         int stopY = initalPosition[0][1];
         double t = Math.random();
@@ -635,12 +652,26 @@ public class TWAgent1 extends TWAgent{
                 } else if (DStep == 1) {
                     newDir = TWDirection.E;
                     DStep = 0;
+                } else if (DStep == 2) {
+                    newDir = TWDirection.W;
+                    DStep = 0;
                 } else if (DownStep < 6) {  //向下不足7步，继续向下
                     Object n = this.memory.getMemoryGrid().get(x, y + 1);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.W;
                         LeftStep++;
-                    } else {
+                    }
+//                    else if(n instanceof TWTile && this.carriedTiles.size() < 3){
+//                        action = TWAction.PICKUP;
+//                        newDir = TWDirection.S;
+//                        DownStep++;
+//                    }
+//                    else if(n instanceof TWHole && this.carriedTiles.size() > 0){
+//                        action = TWAction.PUTDOWN;
+//                        newDir = TWDirection.S;
+//                        DownStep++;
+//                    }
+                    else {
                         newDir = TWDirection.S;
                         DownStep++;
                     }
@@ -660,8 +691,17 @@ public class TWAgent1 extends TWAgent{
                     Object n = this.memory.getMemoryGrid().get(x + 1, y);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.S;
-                        DStep++;
-                    } else {
+                        DStep=1;
+                    }
+//                    else if(n instanceof TWTile && this.carriedTiles.size() < 3){
+//                        action = TWAction.PICKUP;
+//                        newDir = TWDirection.E;
+//                    }
+//                    else if(n instanceof TWHole && this.carriedTiles.size() > 0){
+//                        action = TWAction.PUTDOWN;
+//                        newDir = TWDirection.E;
+//                    }
+                    else {
                         newDir = TWDirection.E;
                     }
                 }
@@ -679,9 +719,18 @@ public class TWAgent1 extends TWAgent{
                 } else { //没左到边界，继续向左
                     Object n = this.memory.getMemoryGrid().get(x - 1, y);
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
-                        newDir = TWDirection.N;
-                        UStep++;
-                    } else {
+                        newDir = TWDirection.S;
+                        DStep=2;
+                    }
+//                    else if(n instanceof TWTile && this.carriedTiles.size() < 3){
+//                        action = TWAction.PICKUP;
+//                        newDir = TWDirection.W;
+//                    }
+//                    else if(n instanceof TWHole && this.carriedTiles.size() > 0){
+//                        action = TWAction.PUTDOWN;
+//                        newDir = TWDirection.W;
+//                    }
+                    else {
                         newDir = TWDirection.W;
                     }
                 }
@@ -703,7 +752,18 @@ public class TWAgent1 extends TWAgent{
                     if (n instanceof TWObstacle && ((TWObstacle) n).getTimeLeft(time) > 3) {
                         newDir = TWDirection.E;
                         RightStep++;
-                    } else {
+                    }
+//                    else if(n instanceof TWTile && this.carriedTiles.size() < 3){
+//                        action = TWAction.PICKUP;
+//                        newDir = TWDirection.N;
+//                        UpStep++;
+//                    }
+//                    else if(n instanceof TWHole && this.carriedTiles.size() > 0){
+//                        action = TWAction.PUTDOWN;
+//                        newDir = TWDirection.N;
+//                        UpStep++;
+//                    }
+                    else {
                         newDir = TWDirection.N;
                         UpStep++;
                     }
