@@ -975,7 +975,7 @@ public class TWAgent1 extends TWAgent{
         }
         // if (this.targetHole == null) return this.getExploreThought(lastThought);
         if (this.targetHole == null) {
-            return this.getExploreThought();
+            return this.getExploreThought(lastThought);
         } else {
             for (int i = 0; i < this.otherAgents.size(); i++) {
                 TWHole otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetHole();
@@ -983,7 +983,7 @@ public class TWAgent1 extends TWAgent{
                     if (this.targetHole.getX() == otherHole.getX() &&
                             this.targetHole.getY() == otherHole.getY()) {
                         this.targetHole = null;
-                        return this.getExploreThought();
+                        return this.getExploreThought(lastThought);
                     }
 
                 }
@@ -1030,7 +1030,7 @@ public class TWAgent1 extends TWAgent{
         // if (this.targetTile == null) return this.getExploreThought(lastThought);
 
         if (this.targetTile == null) {
-            return this.getExploreThought();
+            return this.getExploreThought(lastThought);
         } else {
             for (int i = 0; i < this.otherAgents.size(); i++) {
                 TWTile otherHole = ((TWAgent1)this.otherAgents.get(i)).getTargetTile();
@@ -1038,7 +1038,7 @@ public class TWAgent1 extends TWAgent{
                     if (this.targetTile.getX() == otherHole.getX() &&
                             this.targetTile.getY() == otherHole.getY()) {
                         this.targetTile = null;
-                        return this.getExploreThought();
+                        return this.getExploreThought(lastThought);
                     }
                 }
             }
@@ -1077,5 +1077,13 @@ public class TWAgent1 extends TWAgent{
 
         return randomDir;
 
+    }
+
+    public TWTile getTargetTile() {
+        return this.targetTile;
+    }
+
+    public TWHole getTargetHole() {
+        return this.targetHole;
     }
 }
